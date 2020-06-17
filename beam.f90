@@ -47,11 +47,10 @@ module beam
 		dN = shdfun (e_ord, pts)
 		
 		dX0 = matmul (X0, dN)
-				
+		
 		do i = 1, 3
 			intg (i) = dot_product (dX0 (i, :), wgts)
 		end do
-		
 		element_length = norm2 (intg)
 	
 	end function element_length
@@ -79,16 +78,13 @@ module beam
 		real (DP), intent (in) :: N, dN
 		real (DP), dimension (6, 6) :: Xi
 		real (DP), dimension (3, 3) :: S
-		integer :: i, j
+		integer :: i
 		
 		S = skew (dX)
 		Xi = 0.0_DP
-		Xi (1, 1) = dN
-		Xi (2, 2) = dN
-		Xi (3, 3) = dN
-		Xi (4, 4) = dN
-		Xi (5, 5) = dN
-		Xi (6, 6) = dN
+		do i = 1, 6
+			Xi (i, i) = dN
+		end do
 		Xi (4, 2) = - N * S (1, 2)
 		Xi (4, 3) = - N * S (1, 3)
 		Xi (5, 1) = - N * S (2, 1)
@@ -197,13 +193,13 @@ module beam
 		real (DP), dimension (size (om (1, :))) :: tn
 		real (DP), dimension (3, 3) :: R, rotinv
 		real (DP), dimension (3) ::  b1, b2, b3, a1, a2, a3, Gamma, kappa, fn, fm
-		real (DP), dimension (3), parameter :: E1 = (/ 1.0_DP, 0.0_DP, 0.0_DP /)
+		real (DP), dimension (3), parameter :: E3 = (/ 0.0_DP, 0.0_DP, 1.0_DP /)
 		
 		g_ord = size (om (1, :))
 		nno = size (X0 (1, :))
 		e_ord = nno - 1
 		
-		L = element_length (X0, g_ord) 
+		L = element_length (X0, g_ord)
 		call legauss (g_ord, pts, wgts)
 		N = shfun (e_ord, pts)
 		dN = 2.0_DP / L * shdfun (e_ord, pts)
@@ -216,7 +212,6 @@ module beam
 		do g = 1, g_ord
 			R = rv2mat (t (:, g))
 			rot (g, :, :) = matmul (R, rot (g, :, :))
-			
 			if (tn (g) == 0) then
 				om (:, g) = om (:, g) + dt (:, g)
 			else
@@ -233,7 +228,8 @@ module beam
 			end if
 			
 			rotinv = transpose (rot (g, :, :))
-			Gamma = matmul (rotinv, dX (:, g)) - E1
+			Gamma = matmul (rotinv, dX (:, g))
+			Gamma = Gamma - E3
 			kappa = matmul (rotinv, om (:, g))
 			fn = matmul (C (1:3, 1:3), Gamma)
 			fm = matmul (C (4:6, 4:6), kappa)
@@ -257,7 +253,7 @@ module beam
 		real (DP) :: L
 		real (DP), dimension (size (rot (:, 1, 1))) :: pts, wgts
 		real (DP), dimension (size (X (1, :)), size (rot (:, 1, 1))) :: N, dN
-		real (DP), dimension (6, size (rot (:, 1, 1))) :: dX
+		real (DP), dimension (3, size (rot (:, 1, 1))) :: dX
 		real (DP), dimension (6, 6) :: Pi_g, Xi_i, Xi_j, c_g
 		
 		g_ord = size (rot (:, 1, 1))
@@ -473,7 +469,7 @@ module beam
 				rot (e, :, :, :), om (e, :, :), f (e, :, :) &
 			)
 		end do
-	
+		
 	end subroutine curv
 	
 	

@@ -14,7 +14,7 @@ program example
 	real (DP), dimension (1, 3, 1) :: om
 	real (DP), dimension (1, 1, 3, 3) :: rot
 	integer, parameter :: MAXITER = 20
-	real (DP), parameter :: TOLER = 1E-5
+	real (DP), parameter :: TOLER = 1D-5
 	integer :: i
 		
 	ele (1, :) = (/ 1, 2 /)

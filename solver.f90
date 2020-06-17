@@ -22,9 +22,77 @@ module solver
 	
 	private
 	
-	public :: newton_iter
+	public :: newton_iter, newton_iter_det, arc_length_iter
 	
 	contains
+	
+	subroutine errcheck (info, msg)
+	
+		implicit none
+		
+		integer, intent (in) :: info
+		character (len = *), intent (in) :: msg
+		
+		if (info .ne. 0) then
+			write (6, '(A)'), msg
+			stop
+		end if
+		
+	end subroutine errcheck
+	
+	subroutine pack2 (A, DOF, B)
+		
+		implicit none
+		
+		real (DP), dimension (:, :), intent (in) :: A
+		logical, dimension (:), intent (in) :: DOF
+		real (DP), dimension (:, :), intent (out) :: B
+		real (DP), dimension (size (A (:, 1)), size (B (1, :))) :: AB
+		integer :: j
+		
+		do j = 1, size (A (:, 1))
+			AB (j, :) = pack (A (j, :), DOF)
+		end do
+		do j = 1, size (B (1, :))
+			B (:, j) = pack (AB (:, j), DOF)
+		end do
+	
+	end subroutine pack2
+	
+	subroutine logicwrite (A, DOF, B)
+		
+		implicit none
+		
+		real (DP), dimension (:), intent (in) :: A
+		logical, dimension (:), intent (in) :: DOF
+		real (DP), dimension (:), intent (out) :: B
+		integer :: j, k
+		
+		k = 1
+		do j = 1, size (B)  ! overwrite the result
+			if (DOF (j) .eq. .TRUE.) then
+				B (j) = A (k)
+				k = k + 1
+			end if
+		end do
+		
+	end subroutine logicwrite
+	
+	subroutine begin_table (typ)
+		
+		implicit none
+		
+		character :: typ
+		
+		if (typ .eq. 'A') then		
+			write (6, '(/, 3X, "n", X, "|", X, "residual vector norm", X, "|", X, "load parameter")')
+			write (6, '(A)'), repeat("-", 45)
+		else
+			write (6, '(/, 3X, "n", X, "|", X, "residual vector norm")')
+			write (6, '(A)'), repeat("-", 28)
+		end if
+		
+	end subroutine begin_table
 	
 	! perform newton-raphson iteration
 	!
@@ -33,15 +101,19 @@ module solver
 	! U ............ displacement (3, no all nodes)
 	! C ............ tangent elastic moduli (6, 6)
 	! DOF .......... degrees of freedom (6, no all nodes)
-	! dU ........... prescribed displacement/rotation (6, no all nodes)
+	! Uload ........ prescribed displacement/rotation (6, no all nodes)
 	! Q ............ nodal load (6, no all nodes)
 	! p ............ distributed load (no ele, 6, no gauss)
 	! rot .......... rotations in gauss points (no ele, no gauss, 3, 3)
 	! om ........... curvature vector (no ele, 3, no gauss)
 	! f ............ internal force vector (no ele, 3, no gauss)
+	! resout ....... residual vector (6, no all nodes)
+	! TOLER ........ tolerance for convergence
+	! MAXITER ...... maximum no of iterations
+	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
 	!
 	! modify U, rot, om, f
-	subroutine newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, TOLER, MAXITER)
+	subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST)
 	
 		implicit none
 		
@@ -50,79 +122,64 @@ module solver
 		real (DP), dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
 		real (DP), dimension (6, 6), intent (in) :: C
 		logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
-		real (DP), dimension (:, :), intent (in) :: dU, Q  ! (6, no all nodes)
+		real (DP), dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
 		real (DP), dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
 		real (DP), dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
 		real (DP), dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
 		real (DP), dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
-		integer :: nno, nele, ndof, i, j, k, info
-		real (DP) :: TOLER, Rnorm
-		integer :: MAXITER
+		real (DP), dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
+		real (DP), intent (in) :: TOLER
+		integer, intent (in) :: MAXITER
+		character (len = 3), intent (in) :: TEST
+		
+		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
 		real (DP), dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
-		real (DP), allocatable :: K1 (:, :), K2 (:, :)
+		real (DP), allocatable :: K2 (:, :)
 		real (DP), dimension (6, size (X0 (1, :))) :: res
 		real (DP), dimension (6 * size (X0 (1, :))) :: res2
-		real (DP), allocatable :: res1 (:), R1 (:), R2 (:, :)
-		real (DP), dimension (3, size (X0 (1, :))) :: X, dx, th
+		real (DP), allocatable :: R1 (:), R2 (:, :)
+		real (DP), dimension (3, size (X0 (1, :))) :: X, dU, th
 		real (DP), dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
 		integer, allocatable :: ipiv (:)
+		real (DP) :: convtest
 		
 		nno = size (X0 (1, :))
-		nele = size (ele (:, 1))
 		
-		res = dU
+		res = Uload
 		
 		DOFsel = pack (DOF, .TRUE.)
 		ndof = count (DOFsel)
-		allocate (K1 (6 * nno, ndof), K2 (ndof, ndof), res1 (ndof))
+		allocate (K2 (ndof, ndof))
 		allocate (R1 (ndof), R2 (ndof, 1), ipiv (ndof))
 		
-		write (6, '(3X, "n", X, "|", X, "residual vector norm")')
-		write (6, '(A)'), repeat("-", 28)
+		call begin_table ('N')
 		
 		do i = 0, MAXITER-1
 			if (i > 0) then
 				res = 0.0_DP
 				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
 				
-				do concurrent (j = 1:6 * nno)  ! keep only dof 1st step
-					K1 (j, :) = pack (tangent (j, :), DOFsel)
-				end do
-				do concurrent (j = 1:ndof)  ! keep only dof 2nd step
-					K2 (:, j) = pack (K1 (:, j), DOFsel)
-				end do
+				call pack2 (tangent, DOFsel, K2)
 				
 				call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
-				if (info .ne. 0) then
-					write (6, '("Singular matrix")')
-					stop
-				end if
-				
+				call errcheck (info, 'Singular matrix')
+								
 				call dgetrs ('N', ndof, 1, K2, ndof, ipiv, R2, ndof, info)  ! solve system
-				if (info .ne. 0) then
-					write (6, '("Singular matrix")')
-					stop
-				end if
+				call errcheck (info, 'Singular matrix')
 				
 				res2 = 0.0_DP
-				k = 1
-				do j = 1, 6 * nno  ! overwrite the result
-					if (DOFsel (j) .eq. .TRUE.) then
-						res2 (j) = R2 (k, 1)
-						k = k + 1
-					end if
-				end do
-				
+				call logicwrite (R2 (:, 1), DOFsel, res2)
 				res = reshape (res2, (/ 6, nno /))
+				
 			end if
 			
 			do concurrent (j = 1:3)
-				dx (j, :) = res (j, :) 
-				th (j, :) = res (j + 3, :) 
+				dU (j, :) = res (j, :) 
+				th (j, :) = res (j + 3, :)
 			end do
 			
-			U = U + dx
+			U = U + dU
 			X = X0 + U
 			
 			call curv (ele, X0, X, th, C, rot, om, f)
@@ -131,21 +188,321 @@ module solver
 			Fext = Fextg (ele, X0, Q, p)
 			R = Fint - Fext
 			R1 = pack (R, DOFsel)
+			
+			if (TEST .eq. 'RSD') convtest = norm2 (R1)
+			if (TEST .eq. 'DSP') convtest = norm2 (R2)
+			
+			write (6, '(I4, X, "|", X, ES20.13)'), i, convtest
+			if (convtest < TOLER) exit
+			
 			R2 (:, 1) = -R1  ! invert and verticalize residual
-			Rnorm = norm2 (R1)
-			write (6, '(I4, X, "|", X, ES20.13)'), i, Rnorm
-			
-			if (Rnorm < TOLER) then
-				exit
-			end if
-			
+						
 		end do
 		
+		resout = reshape (R, (/ 6, nno /))
+		
 		if (i .eq. MAXITER) then
-			write (6, '("Not converging")')
+			write (6, '(/, "Not converging")')
 			stop
 		end if
 		
 	end subroutine newton_iter
+	
+	! perform newton-raphson iteration with determinant sign print
+	!
+	! ele .......... elements array (no ele, no nodes on ele)
+	! X0 ........... initial coordinates (3, no all nodes)
+	! U ............ displacement (3, no all nodes)
+	! C ............ tangent elastic moduli (6, 6)
+	! DOF .......... degrees of freedom (6, no all nodes)
+	! Uload ........ prescribed displacement/rotation (6, no all nodes)
+	! Q ............ nodal load (6, no all nodes)
+	! p ............ distributed load (no ele, 6, no gauss)
+	! rot .......... rotations in gauss points (no ele, no gauss, 3, 3)
+	! om ........... curvature vector (no ele, 3, no gauss)
+	! f ............ internal force vector (no ele, 3, no gauss)
+	! resout ....... residual vector (6, no all nodes)
+	! TOLER ........ tolerance for convergence
+	! MAXITER ...... maximum no of iterations
+	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
+	!
+	! modify U, rot, om, f
+	subroutine newton_iter_det (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST)
+	
+		implicit none
+		
+		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
+		real (DP), dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
+		real (DP), dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
+		real (DP), dimension (6, 6), intent (in) :: C
+		logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
+		real (DP), dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
+		real (DP), dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
+		real (DP), dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
+		real (DP), dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
+		real (DP), dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
+		real (DP), dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
+		real (DP), intent (in) :: TOLER
+		integer, intent (in) :: MAXITER
+		character (len = 3), intent (in) :: TEST
+		
+		integer :: nno, ndof, i, j, info
+		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
+		real (DP), dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
+		real (DP), allocatable :: K2 (:, :)
+		real (DP), dimension (6, size (X0 (1, :))) :: res
+		real (DP), dimension (6 * size (X0 (1, :))) :: res2
+		real (DP), allocatable :: R1 (:), R2 (:, :)
+		real (DP), dimension (3, size (X0 (1, :))) :: X, dU, th
+		real (DP), dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
+		integer, allocatable :: ipiv (:)
+		real (DP) :: convtest, tandet
+		
+		nno = size (X0 (1, :))
+		
+		res = Uload
+		
+		DOFsel = pack (DOF, .TRUE.)
+		ndof = count (DOFsel)
+		allocate (K2 (ndof, ndof))
+		allocate (R1 (ndof), R2 (ndof, 1), ipiv (ndof))
+		
+		call begin_table ('N')
+		
+		do i = 0, MAXITER-1
+			if (i > 0) then
+				res = 0.0_DP
+				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
+				
+				call pack2 (tangent, DOFsel, K2)
+				
+				call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
+				call errcheck (info, 'Singular matrix')
+				
+				tandet = 1.0_DP
+				do j = 1, ndof  ! compute sign of determinant
+					tandet = K2 (j, j) / abs (K2 (j, j)) * tandet
+					if (j .ne. ipiv (j)) then
+						tandet = -1 * tandet
+					end if
+				end do
+				
+				write (6, '("Sign of determinant:", X, F5.1)'), tandet
+								
+				call dgetrs ('N', ndof, 1, K2, ndof, ipiv, R2, ndof, info)  ! solve system
+				call errcheck (info, 'Singular matrix')
+				
+				res2 = 0.0_DP
+				call logicwrite (R2 (:, 1), DOFsel, res2)
+				res = reshape (res2, (/ 6, nno /))
+				
+			end if
+			
+			do concurrent (j = 1:3)
+				dU (j, :) = res (j, :) 
+				th (j, :) = res (j + 3, :)
+			end do
+			
+			U = U + dU
+			X = X0 + U
+			
+			call curv (ele, X0, X, th, C, rot, om, f)
+			
+			Fint = Fintg (ele, X0, X, f)
+			Fext = Fextg (ele, X0, Q, p)
+			R = Fint - Fext
+			R1 = pack (R, DOFsel)
+			
+			if (TEST .eq. 'RSD') convtest = norm2 (R1)
+			if (TEST .eq. 'DSP') convtest = norm2 (R2)
+			
+			write (6, '(I4, X, "|", X, ES20.13)'), i, convtest
+			if (convtest < TOLER) exit
+			
+			R2 (:, 1) = -R1  ! invert and verticalize residual
+						
+		end do
+		
+		resout = reshape (R, (/ 6, nno /))
+		
+		if (i .eq. MAXITER) then
+			write (6, '(/, "Not converging")')
+			stop
+		end if
+		
+	end subroutine newton_iter_det
+	
+	recursive function det_rosetta ( mat, n ) result( accum )
+		integer :: n
+		real (DP)  :: mat(n, n)
+		real (DP)    :: submat(n-1, n-1), accum
+		integer :: i, sgn
+
+		if ( n == 1 ) then
+			accum = mat(1,1)
+		else
+			accum = 0.0
+			sgn = 1
+			do i = 1, n
+				submat( 1:n-1, 1:i-1 ) = mat( 2:n, 1:i-1 )
+				submat( 1:n-1, i:n-1 ) = mat( 2:n, i+1:n )
+
+				accum = accum + sgn * mat(1, i) * det_rosetta( submat, n-1 )
+				sgn = - sgn
+			enddo
+		endif
+	end function
+	
+	! perform arc-length iteration
+	!
+	! ele .......... elements array (no ele, no nodes on ele)
+	! X0 ........... initial coordinates (3, no all nodes)
+	! U ............ displacement (3, no all nodes)
+	! C ............ tangent elastic moduli (6, 6)
+	! DOF .......... degrees of freedom (6, no all nodes)
+	! Uload ........ prescribed displacement/rotation (6, no all nodes)
+	! Q ............ nodal load (6, no all nodes)
+	! p ............ distributed load (no ele, 6, no gauss)
+	! rot .......... rotations in gauss points (no ele, no gauss, 3, 3)
+	! om ........... curvature vector (no ele, 3, no gauss)
+	! f ............ internal force vector (no ele, 3, no gauss)
+	! resout ....... residual vector (6, no all nodes)
+	! lambda ....... load multiplier
+	! dS ........... convergence radius
+	! TOLER ........ tolerance for convergence
+	! MAXITER ...... maximum no of iterations
+	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
+	!
+	! modify U, rot, om, f
+	subroutine arc_length_iter (ele, X0, Uinc, U, C, DOF, Q, p, rot, om, f, resout, lambda, dS, TOLER, MAXITER)
+	
+		implicit none
+		
+		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
+		real (DP), dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
+		real (DP), dimension (:), intent (inout) :: Uinc  ! (3 * no all nodes)
+		real (DP), dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
+		real (DP), dimension (6, 6), intent (in) :: C
+		logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
+		real (DP), dimension (:, :), intent (in) :: Q  ! (6, no all nodes)
+		real (DP), dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
+		real (DP), dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
+		real (DP), dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
+		real (DP), dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
+		real (DP), dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
+		real (DP), intent (inout) :: lambda
+		real (DP), intent (in) :: dS
+		real (DP), intent (in) :: TOLER
+		integer, intent (in) :: MAXITER
+		
+		integer :: nno, ndof, i, j, info
+		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
+		real (DP), dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
+		real (DP), allocatable :: K2 (:, :)
+		real (DP), dimension (6 * size (X0 (1, :))) :: res2F, res2R
+		real (DP), dimension (6, size (X0 (1, :))) :: resF, resR
+		real (DP), allocatable :: R2 (:, :)
+		real (DP), dimension (3, size (X0 (1, :))) :: X, dU, th, U0, dUF, dUR, thF, thR
+		real (DP), dimension (3 * size (X0 (1, :))) :: dUFflat, dURflat
+		real (DP), dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
+		integer, allocatable :: ipiv (:)
+		real (DP) :: convtest, dlambda, dlambda1, dlambda2, discriminant, UincdotdUF, sig, a1, a2, a3
+		real (DP), dimension (2) :: dlambda_test
+		integer, dimension (1) :: dlambda_test_res
+		
+		nno = size (X0 (1, :))
+				
+		X = X0 + U
+		DOFsel = pack (DOF, .TRUE.)
+		ndof = count (DOFsel)
+		allocate (K2 (ndof, ndof))
+		allocate (R2 (ndof, 2), ipiv (ndof))
+		
+		Fint = Fintg (ele, X0, X, f)
+		Fext = Fextg (ele, X0, Q, p)
+		R = Fint - lambda * Fext
+		R2 (:, 1) = pack (Fext, DOFsel)
+		R2 (:, 2) = pack (-R, DOFsel)
+		
+		call begin_table ('A')
+		write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F14.10)'), 0, norm2 (R), lambda
+		
+		do i = 1, MAXITER
+		
+			res2F = 0.0_DP
+			res2R = 0.0_DP
+			
+			tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
+			call pack2 (tangent, DOFsel, K2)
+			
+			call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
+			call errcheck (info, 'Singular matrix')
+						
+			call dgetrs ('N', ndof, 2, K2, ndof, ipiv, R2, ndof, info)  ! solve system
+			call errcheck (info, 'Singular matrix')
+			
+			call logicwrite (R2 (:, 1), DOFsel, res2F)
+			call logicwrite (R2 (:, 2), DOFsel, res2R)
+			resF = reshape (res2F, (/ 6, nno /))
+			resR = reshape (res2R, (/ 6, nno /))
+			
+			do concurrent (j = 1:3)
+				dUF (j, :) = resF (j, :)
+				thF (j, :) = resF (j + 3, :)
+				dUR (j, :) = resR (j, :)
+				thR (j, :) = resR (j + 3, :)
+			end do
+			
+			dUFflat = pack (dUF, .TRUE.)
+			dURflat = pack (dUR, .TRUE.)
+			
+			a1 = dot_product (dUFflat, dUFflat)
+			if (i .eq. 1) then
+				UincdotdUF = dot_product (Uinc, dUFflat)
+				dlambda = sign (dS / a1, UincdotdUF)
+				Uinc = 0.0_DP
+			else
+				a2 = 2 * dot_product(Uinc + dURflat, dUFflat)
+				a3 = dot_product (Uinc + dURflat, Uinc + dURflat) - dS ** 2
+				discriminant = sqrt (a2 ** 2 - 4 * a1 * a3)
+				dlambda1 = (-a2 - discriminant) / (2 * a1)
+				dlambda2 = (-a2 + discriminant) / (2 * a1)
+				dlambda_test = (/ &
+					dot_product (Uinc + dURflat + dlambda1 * dUFflat, Uinc), &
+					dot_product (Uinc + dURflat + dlambda2 * dUFflat, Uinc) &
+				/)
+				dlambda_test_res = maxloc (dlambda_test)
+				if (dlambda_test_res (1) .eq. 1) then
+					dlambda = dlambda1
+				else
+					dlambda = dlambda2
+				end if
+			end if
+			
+			lambda = lambda + dlambda
+			Uinc = Uinc + dURflat + dlambda * dUFflat
+			U = U + dUR + dlambda * dUF
+			X = X0 + U
+			th = thR + dlambda * thF
+			call curv (ele, X0, X, th, C, rot, om, f)
+			Fint = Fintg (ele, X0, X, f)
+			R = Fint - lambda * Fext
+			R2 (:, 1) = pack (Fext, DOFsel)
+			R2 (:, 2) = pack (-R, DOFsel)
+			convtest = norm2 (R2 (:, 2)) / norm2 (R2 (:, 1))
+			write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F14.10)'), i, convtest, lambda
+			if (convtest < TOLER) exit
+			
+		end do
+		
+		resout = reshape (R, (/ 6, nno /))
+		
+		if (i .eq. MAXITER + 1) then
+			write (6, '(/, "Not converging")')
+			stop
+		end if
+		
+	end subroutine arc_length_iter
+	
 	
 end module
