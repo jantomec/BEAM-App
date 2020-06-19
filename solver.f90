@@ -26,20 +26,6 @@ module solver
 	
 	contains
 	
-	subroutine errcheck (info, msg)
-	
-		implicit none
-		
-		integer, intent (in) :: info
-		character (len = *), intent (in) :: msg
-		
-		if (info .ne. 0) then
-			write (6, '(A)'), msg
-			stop
-		end if
-		
-	end subroutine errcheck
-	
 	subroutine pack2 (A, DOF, B)
 		
 		implicit none
@@ -113,7 +99,7 @@ module solver
 	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
 	!
 	! modify U, rot, om, f
-	subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST)
+	subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errinfo)
 	
 		implicit none
 		
@@ -131,6 +117,8 @@ module solver
 		real (DP), intent (in) :: TOLER
 		integer, intent (in) :: MAXITER
 		character (len = 3), intent (in) :: TEST
+		integer, intent (out) :: Niter
+		integer, intent (out) :: errinfo
 		
 		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
@@ -144,6 +132,8 @@ module solver
 		integer, allocatable :: ipiv (:)
 		real (DP) :: convtest
 		
+		errinfo = 0.0_DP
+		
 		nno = size (X0 (1, :))
 		
 		res = Uload
@@ -156,6 +146,9 @@ module solver
 		call begin_table ('N')
 		
 		do i = 0, MAXITER-1
+			
+			Niter = i + 1
+			
 			if (i > 0) then
 				res = 0.0_DP
 				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
@@ -163,10 +156,16 @@ module solver
 				call pack2 (tangent, DOFsel, K2)
 				
 				call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
-				call errcheck (info, 'Singular matrix')
+				if (info .ne. 0) then
+					errinfo = 2
+					exit
+				end if	
 								
 				call dgetrs ('N', ndof, 1, K2, ndof, ipiv, R2, ndof, info)  ! solve system
-				call errcheck (info, 'Singular matrix')
+				if (info .ne. 0) then
+					errinfo = 3
+					exit
+				end if	
 				
 				res2 = 0.0_DP
 				call logicwrite (R2 (:, 1), DOFsel, res2)
@@ -227,7 +226,7 @@ module solver
 	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
 	!
 	! modify U, rot, om, f
-	subroutine newton_iter_det (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST)
+	subroutine newton_iter_det (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errinfo)
 	
 		implicit none
 		
@@ -245,6 +244,8 @@ module solver
 		real (DP), intent (in) :: TOLER
 		integer, intent (in) :: MAXITER
 		character (len = 3), intent (in) :: TEST
+		integer, intent (out) :: Niter
+		integer, intent (out) :: errinfo
 		
 		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
@@ -258,6 +259,8 @@ module solver
 		integer, allocatable :: ipiv (:)
 		real (DP) :: convtest, tandet
 		
+		errinfo = 0.0_DP
+		
 		nno = size (X0 (1, :))
 		
 		res = Uload
@@ -270,6 +273,9 @@ module solver
 		call begin_table ('N')
 		
 		do i = 0, MAXITER-1
+			
+			Niter = i + 1
+			
 			if (i > 0) then
 				res = 0.0_DP
 				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
@@ -277,7 +283,10 @@ module solver
 				call pack2 (tangent, DOFsel, K2)
 				
 				call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
-				call errcheck (info, 'Singular matrix')
+				if (info .ne. 0) then
+					errinfo = 2
+					exit
+				end if	
 				
 				tandet = 1.0_DP
 				do j = 1, ndof  ! compute sign of determinant
@@ -290,7 +299,10 @@ module solver
 				write (6, '("Sign of determinant:", X, F5.1)'), tandet
 								
 				call dgetrs ('N', ndof, 1, K2, ndof, ipiv, R2, ndof, info)  ! solve system
-				call errcheck (info, 'Singular matrix')
+				if (info .ne. 0) then
+					errinfo = 3
+					exit
+				end if	
 				
 				res2 = 0.0_DP
 				call logicwrite (R2 (:, 1), DOFsel, res2)
@@ -374,7 +386,7 @@ module solver
 	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
 	!
 	! modify U, rot, om, f
-	subroutine arc_length_iter (ele, X0, Uinc, U, C, DOF, Q, p, rot, om, f, resout, lambda, dS, TOLER, MAXITER)
+	subroutine arc_length_iter (ele, X0, Uinc, U, C, DOF, Q, QC, p, rot, om, f, resout, lambda, dS, TOLER, MAXITER, Niter, errinfo)
 	
 		implicit none
 		
@@ -384,7 +396,7 @@ module solver
 		real (DP), dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
 		real (DP), dimension (6, 6), intent (in) :: C
 		logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
-		real (DP), dimension (:, :), intent (in) :: Q  ! (6, no all nodes)
+		real (DP), dimension (:, :), intent (in) :: Q, QC  ! (6, no all nodes)
 		real (DP), dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
 		real (DP), dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
 		real (DP), dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
@@ -394,6 +406,8 @@ module solver
 		real (DP), intent (in) :: dS
 		real (DP), intent (in) :: TOLER
 		integer, intent (in) :: MAXITER
+		integer, intent (out) :: Niter
+		integer, intent (out) :: errinfo
 		
 		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
@@ -404,11 +418,13 @@ module solver
 		real (DP), allocatable :: R2 (:, :)
 		real (DP), dimension (3, size (X0 (1, :))) :: X, dU, th, U0, dUF, dUR, thF, thR
 		real (DP), dimension (3 * size (X0 (1, :))) :: dUFflat, dURflat
-		real (DP), dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
+		real (DP), dimension (6 * size (X0 (1, :))) :: Fint, Fext, FC, R
 		integer, allocatable :: ipiv (:)
 		real (DP) :: convtest, dlambda, dlambda1, dlambda2, discriminant, UincdotdUF, sig, a1, a2, a3
 		real (DP), dimension (2) :: dlambda_test
 		integer, dimension (1) :: dlambda_test_res
+		
+		errinfo = 0
 		
 		nno = size (X0 (1, :))
 				
@@ -420,7 +436,8 @@ module solver
 		
 		Fint = Fintg (ele, X0, X, f)
 		Fext = Fextg (ele, X0, Q, p)
-		R = Fint - lambda * Fext
+		FC = Fextg (ele, X0, QC, p)
+		R = Fint - lambda * Fext - FC
 		R2 (:, 1) = pack (Fext, DOFsel)
 		R2 (:, 2) = pack (-R, DOFsel)
 		
@@ -428,6 +445,8 @@ module solver
 		write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F14.10)'), 0, norm2 (R), lambda
 		
 		do i = 1, MAXITER
+			
+			Niter = i
 		
 			res2F = 0.0_DP
 			res2R = 0.0_DP
@@ -436,10 +455,16 @@ module solver
 			call pack2 (tangent, DOFsel, K2)
 			
 			call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
-			call errcheck (info, 'Singular matrix')
-						
+			if (info .ne. 0) then
+				errinfo = 2
+				exit
+			end if			
+			
 			call dgetrs ('N', ndof, 2, K2, ndof, ipiv, R2, ndof, info)  ! solve system
-			call errcheck (info, 'Singular matrix')
+			if (info .ne. 0) then
+				errinfo = 3
+				exit
+			end if
 			
 			call logicwrite (R2 (:, 1), DOFsel, res2F)
 			call logicwrite (R2 (:, 2), DOFsel, res2R)
@@ -459,14 +484,21 @@ module solver
 			a1 = dot_product (dUFflat, dUFflat)
 			if (i .eq. 1) then
 				UincdotdUF = dot_product (Uinc, dUFflat)
-				dlambda = sign (dS / a1, UincdotdUF)
+				dlambda = sign (dS / sqrt (a1), UincdotdUF)
 				Uinc = 0.0_DP
 			else
 				a2 = 2 * dot_product(Uinc + dURflat, dUFflat)
 				a3 = dot_product (Uinc + dURflat, Uinc + dURflat) - dS ** 2
+				
+				if (a2 ** 2 - 4 * a1 * a3 < 0) then
+					errinfo = 1
+					exit
+				end if
+				
 				discriminant = sqrt (a2 ** 2 - 4 * a1 * a3)
 				dlambda1 = (-a2 - discriminant) / (2 * a1)
 				dlambda2 = (-a2 + discriminant) / (2 * a1)
+				
 				dlambda_test = (/ &
 					dot_product (Uinc + dURflat + dlambda1 * dUFflat, Uinc), &
 					dot_product (Uinc + dURflat + dlambda2 * dUFflat, Uinc) &
@@ -486,11 +518,11 @@ module solver
 			th = thR + dlambda * thF
 			call curv (ele, X0, X, th, C, rot, om, f)
 			Fint = Fintg (ele, X0, X, f)
-			R = Fint - lambda * Fext
+			R = Fint - lambda * Fext - FC
 			R2 (:, 1) = pack (Fext, DOFsel)
 			R2 (:, 2) = pack (-R, DOFsel)
 			convtest = norm2 (R2 (:, 2)) / norm2 (R2 (:, 1))
-			write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F14.10)'), i, convtest, lambda
+			write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F15.11)'), i, convtest, lambda
 			if (convtest < TOLER) exit
 			
 		end do
