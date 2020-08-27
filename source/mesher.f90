@@ -24,7 +24,6 @@ end module
 
 module mesher
 	
-	use f95_precision
 	use mesh_object
 	use vector_algebra
 	
@@ -32,7 +31,7 @@ module mesher
 	
 	private
 	
-	double precision, parameter :: PI = 4 * atan (1.0_DP)
+	double precision, parameter :: PI = 4 * atan (1.0)
 	
 	public :: lmsh, ramsh, arcmsh
 	
@@ -54,7 +53,7 @@ module mesher
 		
 		allocate (mesh%X0 (3, mesh%Nno), mesh%ele (mesh%Nele, mesh%order + 1))
 		
-		mesh%X0 = 0.0_DP
+		mesh%X0 = 0.0
 		dx = L / (mesh%Nno - 1)
 		mesh%X0 (3, :) = (/ (j * dx, j = 0, mesh%Nno - 1) /)
 		
@@ -80,14 +79,14 @@ module mesher
 		
 		allocate (mesh%X0 (3, mesh%Nno), mesh%ele (mesh%Nele, mesh%order + 1))
 		
-		mesh%X0 = 0.0_DP
+		mesh%X0 = 0.0
 		dx = 2 * L / (mesh%Nno - 1)
 		do j = 0, mesh%Nno - 1
-			mesh%X0 (3, j + 1) = j * dx / dsqrt (2.0_DP)
+			mesh%X0 (3, j + 1) = j * dx / dsqrt (2.0D1)
 			if (j > mesh%Nno / 2) then
-				mesh%X0 (1, j + 1) = L / dsqrt(2.0_DP) - (j - mesh%Nno / 2) * dx / dsqrt (2.0_DP)
+				mesh%X0 (1, j + 1) = L / dsqrt (2.0D1) - (j - mesh%Nno / 2) * dx / dsqrt (2.0D1)
 			else
-				mesh%X0 (1, j + 1) = j * dx / dsqrt (2.0_DP)
+				mesh%X0 (1, j + 1) = j * dx / dsqrt (2.0D1)
 			end if
 		end do
 		do i = 1, mesh%order + 1
@@ -116,7 +115,7 @@ module mesher
 		
 		allocate (mesh%X0 (3, mesh%Nno), mesh%ele (mesh%Nele, mesh%order + 1))
 		
-		mesh%X0 = 0.0_DP
+		mesh%X0 = 0.0
 		dphi = (phi_f - phi_i) / (mesh%Nno - 1)
 		do i = 1, mesh%Nno
 			mesh%X0 (3, i) = R * cos (phi_i + (i - 1) * dphi)
@@ -132,8 +131,8 @@ module mesher
 			phi1 = phi_i + (e (1) - 1) * dphi
 			phi2 = phi_i + (e (mesh%order + 1) - 1) * dphi
 			do j = 1, size (gpts)
-				phig = ((gpts (j) + 1.0_DP) / 2.0_DP * (phi2 - phi1) + phi1) + PI / 2
-				rotvec = (/ 0.0_DP, phig, 0.0_DP /)
+				phig = ((gpts (j) + 1.0) / 2.0 * (phi2 - phi1) + phi1) + PI / 2
+				rotvec = (/ 0.0D1, phig, 0.0D1 /)
 				rot (i, j, :, :) = rv2mat (rotvec)
 			end do
 		end do

@@ -14,7 +14,6 @@
 
 module solver
 
-	use lapack95
 	use beam
 	
 	implicit none
@@ -55,7 +54,7 @@ module solver
 		
 		k = 1
 		do j = 1, size (B)  ! overwrite the result
-			if (DOF (j) .eq. .TRUE.) then
+			if (DOF (j) .eqv. .TRUE.) then
 				B (j) = A (k)
 				k = k + 1
 			end if
@@ -71,10 +70,10 @@ module solver
 		
 		if (typ .eq. 'A') then		
 			write (6, '(/, 3X, "n", X, "|", X, "residual vector norm", X, "|", X, "load parameter")')
-			write (6, '(A)'), repeat("-", 45)
+			write (6, '(A)') repeat("-", 45)
 		else
 			write (6, '(/, 3X, "n", X, "|", X, "residual vector norm")')
-			write (6, '(A)'), repeat("-", 28)
+			write (6, '(A)') repeat("-", 28)
 		end if
 		
 	end subroutine begin_table
@@ -131,7 +130,7 @@ module solver
 		integer, allocatable :: ipiv (:)
 		double precision :: convtest
 		
-		errinfo = 0.0_DP
+		errinfo = 0.0
 		
 		nno = size (X0 (1, :))
 		
@@ -149,7 +148,7 @@ module solver
 			Niter = i + 1
 			
 			if (i > 0) then
-				res = 0.0_DP
+				res = 0.0
 				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
 				
 				call pack2 (tangent, DOFsel, K2)
@@ -166,7 +165,7 @@ module solver
 					exit
 				end if	
 				
-				res2 = 0.0_DP
+				res2 = 0.0
 				call logicwrite (R2 (:, 1), DOFsel, res2)
 				res = reshape (res2, (/ 6, nno /))
 				
@@ -190,7 +189,7 @@ module solver
 			if (TEST .eq. 'RSD') convtest = norm2 (R1)
 			if (TEST .eq. 'DSP') convtest = norm2 (R2)
 			
-			write (6, '(I4, X, "|", X, ES20.13)'), i, convtest
+			write (6, '(I4, X, "|", X, ES20.13)') i, convtest
 			if (convtest < TOLER) exit
 			
 			R2 (:, 1) = -R1  ! invert and verticalize residual
@@ -258,7 +257,7 @@ module solver
 		integer, allocatable :: ipiv (:)
 		double precision :: convtest, tandet
 		
-		errinfo = 0.0_DP
+		errinfo = 0.0
 		
 		nno = size (X0 (1, :))
 		
@@ -276,7 +275,7 @@ module solver
 			Niter = i + 1
 			
 			if (i > 0) then
-				res = 0.0_DP
+				res = 0.0
 				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
 				
 				call pack2 (tangent, DOFsel, K2)
@@ -287,7 +286,7 @@ module solver
 					exit
 				end if	
 				
-				tandet = 1.0_DP
+				tandet = 1.0
 				do j = 1, ndof  ! compute sign of determinant
 					tandet = K2 (j, j) / abs (K2 (j, j)) * tandet
 					if (j .ne. ipiv (j)) then
@@ -295,7 +294,7 @@ module solver
 					end if
 				end do
 				
-				write (6, '("Sign of determinant:", X, F5.1)'), tandet
+				write (6, '("Sign of determinant:", X, F5.1)') tandet
 								
 				call dgetrs ('N', ndof, 1, K2, ndof, ipiv, R2, ndof, info)  ! solve system
 				if (info .ne. 0) then
@@ -303,7 +302,7 @@ module solver
 					exit
 				end if	
 				
-				res2 = 0.0_DP
+				res2 = 0.0
 				call logicwrite (R2 (:, 1), DOFsel, res2)
 				res = reshape (res2, (/ 6, nno /))
 				
@@ -327,7 +326,7 @@ module solver
 			if (TEST .eq. 'RSD') convtest = norm2 (R1)
 			if (TEST .eq. 'DSP') convtest = norm2 (R2)
 			
-			write (6, '(I4, X, "|", X, ES20.13)'), i, convtest
+			write (6, '(I4, X, "|", X, ES20.13)') i, convtest
 			if (convtest < TOLER) exit
 			
 			R2 (:, 1) = -R1  ! invert and verticalize residual
@@ -441,14 +440,14 @@ module solver
 		R2 (:, 2) = pack (-R, DOFsel)
 		
 		call begin_table ('A')
-		write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F14.10)'), 0, norm2 (R), lambda
+		write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F14.10)') 0, norm2 (R), lambda
 		
 		do i = 1, MAXITER
 			
 			Niter = i
 		
-			res2F = 0.0_DP
-			res2R = 0.0_DP
+			res2F = 0.0
+			res2R = 0.0
 			
 			tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
 			call pack2 (tangent, DOFsel, K2)
@@ -484,7 +483,7 @@ module solver
 			if (i .eq. 1) then
 				UincdotdUF = dot_product (Uinc, dUFflat)
 				dlambda = sign (dS / sqrt (a1), UincdotdUF)
-				Uinc = 0.0_DP
+				Uinc = 0.0
 			else
 				a2 = 2 * dot_product(Uinc + dURflat, dUFflat)
 				a3 = dot_product (Uinc + dURflat, Uinc + dURflat) - dS ** 2
@@ -521,7 +520,7 @@ module solver
 			R2 (:, 1) = pack (Fext, DOFsel)
 			R2 (:, 2) = pack (-R, DOFsel)
 			convtest = norm2 (R2 (:, 2)) / norm2 (R2 (:, 1))
-			write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F15.11)'), i, convtest, lambda
+			write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F15.11)') i, convtest, lambda
 			if (convtest < TOLER) exit
 			
 		end do

@@ -32,9 +32,9 @@ module shape_functions
 		double precision, dimension (size (pts)) :: N1
 				
 		if (e_ord == 1) then
-			N1 = -0.5_DP * pts + 0.5_DP
+			N1 = -0.5 * pts + 0.5
 		else if (e_ord == 2) then
-			N1 = 0.5_DP * pts ** 2 - 0.5_DP * pts
+			N1 = 0.5 * pts ** 2 - 0.5 * pts
 		end if
 		
 	end function N1
@@ -49,9 +49,9 @@ module shape_functions
 		double precision, dimension (size (pts)) :: N2
 				
 		if (e_ord == 1) then
-			N2 = 0.5_DP * pts + 0.5_DP
+			N2 = 0.5 * pts + 0.5
 		else if (e_ord == 2) then
-			N2 = -1.0_DP * pts ** 2 + 1.0_DP
+			N2 = -1.0 * pts ** 2 + 1.0
 		end if
 		
 	end function N2
@@ -66,7 +66,7 @@ module shape_functions
 		double precision, dimension (size (pts)) :: N3
 				
 		if (e_ord == 2) then
-			N3 = 0.5_DP * pts ** 2 + 0.5_DP * pts
+			N3 = 0.5 * pts ** 2 + 0.5 * pts
 		end if
 		
 	end function N3
@@ -81,9 +81,9 @@ module shape_functions
 		double precision, dimension (size (pts)) :: dN1
 				
 		if (e_ord == 1) then
-			dN1 = -0.5_DP
+			dN1 = -0.5
 		else if (e_ord == 2) then
-			dN1 = pts - 0.5_DP
+			dN1 = pts - 0.5
 		end if
 		
 	end function dN1
@@ -98,9 +98,9 @@ module shape_functions
 		double precision, dimension (size (pts)) :: dN2
 				
 		if (e_ord == 1) then
-			dN2 = 0.5_DP
+			dN2 = 0.5
 		else if (e_ord == 2) then
-			dN2 = -2.0_DP * pts
+			dN2 = -2.0 * pts
 		end if
 		
 	end function dN2
@@ -115,7 +115,7 @@ module shape_functions
 		double precision, dimension (size (pts)) :: dN3
 				
 		if (e_ord == 2) then
-			dN3 = pts + 0.5_DP
+			dN3 = pts + 0.5
 		end if
 		
 	end function dN3

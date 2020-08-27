@@ -62,15 +62,15 @@ module vector_algebra
 		double precision, dimension (3), intent (in) :: r
 		double precision, dimension (3, 3) :: skew
 		
-		skew (1, 1) = 0.0_DP
+		skew (1, 1) = 0.0
 		skew (1, 2) = - r (3)
 		skew (1, 3) = r (2)
 		skew (2, 1) = r (3)
-		skew (2, 2) = 0.0_DP
+		skew (2, 2) = 0.0
 		skew (2, 3) = - r (1)
 		skew (3, 1) = - r (2)
 		skew (3, 2) = r (1)
-		skew (3, 3) = 0.0_DP
+		skew (3, 3) = 0.0
 		
 	end function skew
 	
@@ -106,26 +106,26 @@ module vector_algebra
 		double precision :: sin_r, norm_r, sin_hr, norm_hr
 		integer :: j
 		
-		I = 0.0_DP
+		I = 0.0
 		do j = 1, 3
-			I (j, j) = 1.0_DP
+			I (j, j) = 1.0
 		end do
 		
 		norm_r = norm2 (r)
-		if (norm_r .eq. 0.0_DP) then
+		if (norm_r .eq. 0.0) then
 			T = I
 			return
 		end if
 		
 		sin_r = sin (norm_r)
-		norm_hr = norm2 (r / 2.0_DP)
+		norm_hr = norm2 (r / 2.0)
 		sin_hr = sin (norm_hr)
 		
 		S = skew (r)
 		S2 = skew2 (r)
 		
 		T1 = sin_r / norm_r * S
-		T2 = 0.5_DP * (sin_hr / norm_hr) ** 2 * S2
+		T2 = 0.5 * (sin_hr / norm_hr) ** 2 * S2
 		T = I + T1 + T2
 		
 	end function rv2mat
