@@ -3,4 +3,5 @@
 *.mod
 *.lnk
 *.o
+*.dat
 lib
