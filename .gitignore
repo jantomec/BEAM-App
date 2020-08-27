@@ -1,0 +1,6 @@
+*.obj
+*.exe
+*.mod
+*.lnk
+*.o
+lib
