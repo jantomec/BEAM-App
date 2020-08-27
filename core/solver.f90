@@ -15,7 +15,6 @@
 module solver
 
 	use lapack95
-	use f95_precision
 	use beam
 	
 	implicit none
@@ -30,10 +29,10 @@ module solver
 		
 		implicit none
 		
-		real (DP), dimension (:, :), intent (in) :: A
+		double precision, dimension (:, :), intent (in) :: A
 		logical, dimension (:), intent (in) :: DOF
-		real (DP), dimension (:, :), intent (out) :: B
-		real (DP), dimension (size (A (:, 1)), size (B (1, :))) :: AB
+		double precision, dimension (:, :), intent (out) :: B
+		double precision, dimension (size (A (:, 1)), size (B (1, :))) :: AB
 		integer :: j
 		
 		do j = 1, size (A (:, 1))
@@ -49,9 +48,9 @@ module solver
 		
 		implicit none
 		
-		real (DP), dimension (:), intent (in) :: A
+		double precision, dimension (:), intent (in) :: A
 		logical, dimension (:), intent (in) :: DOF
-		real (DP), dimension (:), intent (out) :: B
+		double precision, dimension (:), intent (out) :: B
 		integer :: j, k
 		
 		k = 1
@@ -104,17 +103,17 @@ module solver
 		implicit none
 		
 		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
-		real (DP), dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
-		real (DP), dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
-		real (DP), dimension (6, 6), intent (in) :: C
+		double precision, dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
+		double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
+		double precision, dimension (6, 6), intent (in) :: C
 		logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
-		real (DP), dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
-		real (DP), dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
-		real (DP), dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
-		real (DP), dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-		real (DP), dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
-		real (DP), dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
-		real (DP), intent (in) :: TOLER
+		double precision, dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
+		double precision, dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
+		double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
+		double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
+		double precision, dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
+		double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
+		double precision, intent (in) :: TOLER
 		integer, intent (in) :: MAXITER
 		character (len = 3), intent (in) :: TEST
 		integer, intent (out) :: Niter
@@ -122,15 +121,15 @@ module solver
 		
 		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
-		real (DP), dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
-		real (DP), allocatable :: K2 (:, :)
-		real (DP), dimension (6, size (X0 (1, :))) :: res
-		real (DP), dimension (6 * size (X0 (1, :))) :: res2
-		real (DP), allocatable :: R1 (:), R2 (:, :)
-		real (DP), dimension (3, size (X0 (1, :))) :: X, dU, th
-		real (DP), dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
+		double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
+		double precision, allocatable :: K2 (:, :)
+		double precision, dimension (6, size (X0 (1, :))) :: res
+		double precision, dimension (6 * size (X0 (1, :))) :: res2
+		double precision, allocatable :: R1 (:), R2 (:, :)
+		double precision, dimension (3, size (X0 (1, :))) :: X, dU, th
+		double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
 		integer, allocatable :: ipiv (:)
-		real (DP) :: convtest
+		double precision :: convtest
 		
 		errinfo = 0.0_DP
 		
@@ -231,17 +230,17 @@ module solver
 		implicit none
 		
 		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
-		real (DP), dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
-		real (DP), dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
-		real (DP), dimension (6, 6), intent (in) :: C
+		double precision, dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
+		double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
+		double precision, dimension (6, 6), intent (in) :: C
 		logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
-		real (DP), dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
-		real (DP), dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
-		real (DP), dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
-		real (DP), dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-		real (DP), dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
-		real (DP), dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
-		real (DP), intent (in) :: TOLER
+		double precision, dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
+		double precision, dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
+		double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
+		double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
+		double precision, dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
+		double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
+		double precision, intent (in) :: TOLER
 		integer, intent (in) :: MAXITER
 		character (len = 3), intent (in) :: TEST
 		integer, intent (out) :: Niter
@@ -249,15 +248,15 @@ module solver
 		
 		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
-		real (DP), dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
-		real (DP), allocatable :: K2 (:, :)
-		real (DP), dimension (6, size (X0 (1, :))) :: res
-		real (DP), dimension (6 * size (X0 (1, :))) :: res2
-		real (DP), allocatable :: R1 (:), R2 (:, :)
-		real (DP), dimension (3, size (X0 (1, :))) :: X, dU, th
-		real (DP), dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
+		double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
+		double precision, allocatable :: K2 (:, :)
+		double precision, dimension (6, size (X0 (1, :))) :: res
+		double precision, dimension (6 * size (X0 (1, :))) :: res2
+		double precision, allocatable :: R1 (:), R2 (:, :)
+		double precision, dimension (3, size (X0 (1, :))) :: X, dU, th
+		double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
 		integer, allocatable :: ipiv (:)
-		real (DP) :: convtest, tandet
+		double precision :: convtest, tandet
 		
 		errinfo = 0.0_DP
 		
@@ -346,8 +345,8 @@ module solver
 	
 	recursive function det_rosetta ( mat, n ) result( accum )
 		integer :: n
-		real (DP)  :: mat(n, n)
-		real (DP)    :: submat(n-1, n-1), accum
+		double precision  :: mat(n, n)
+		double precision    :: submat(n-1, n-1), accum
 		integer :: i, sgn
 
 		if ( n == 1 ) then
@@ -391,37 +390,37 @@ module solver
 		implicit none
 		
 		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
-		real (DP), dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
-		real (DP), dimension (:), intent (inout) :: Uinc  ! (3 * no all nodes)
-		real (DP), dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
-		real (DP), dimension (6, 6), intent (in) :: C
+		double precision, dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
+		double precision, dimension (:), intent (inout) :: Uinc  ! (3 * no all nodes)
+		double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
+		double precision, dimension (6, 6), intent (in) :: C
 		logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
-		real (DP), dimension (:, :), intent (in) :: Q, QC  ! (6, no all nodes)
-		real (DP), dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
-		real (DP), dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
-		real (DP), dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-		real (DP), dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
-		real (DP), dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
-		real (DP), intent (inout) :: lambda
-		real (DP), intent (in) :: dS
-		real (DP), intent (in) :: TOLER
+		double precision, dimension (:, :), intent (in) :: Q, QC  ! (6, no all nodes)
+		double precision, dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
+		double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
+		double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
+		double precision, dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
+		double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
+		double precision, intent (inout) :: lambda
+		double precision, intent (in) :: dS
+		double precision, intent (in) :: TOLER
 		integer, intent (in) :: MAXITER
 		integer, intent (out) :: Niter
 		integer, intent (out) :: errinfo
 		
 		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
-		real (DP), dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
-		real (DP), allocatable :: K2 (:, :)
-		real (DP), dimension (6 * size (X0 (1, :))) :: res2F, res2R
-		real (DP), dimension (6, size (X0 (1, :))) :: resF, resR
-		real (DP), allocatable :: R2 (:, :)
-		real (DP), dimension (3, size (X0 (1, :))) :: X, dU, th, U0, dUF, dUR, thF, thR
-		real (DP), dimension (3 * size (X0 (1, :))) :: dUFflat, dURflat
-		real (DP), dimension (6 * size (X0 (1, :))) :: Fint, Fext, FC, R
+		double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
+		double precision, allocatable :: K2 (:, :)
+		double precision, dimension (6 * size (X0 (1, :))) :: res2F, res2R
+		double precision, dimension (6, size (X0 (1, :))) :: resF, resR
+		double precision, allocatable :: R2 (:, :)
+		double precision, dimension (3, size (X0 (1, :))) :: X, dU, th, U0, dUF, dUR, thF, thR
+		double precision, dimension (3 * size (X0 (1, :))) :: dUFflat, dURflat
+		double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, FC, R
 		integer, allocatable :: ipiv (:)
-		real (DP) :: convtest, dlambda, dlambda1, dlambda2, discriminant, UincdotdUF, sig, a1, a2, a3
-		real (DP), dimension (2) :: dlambda_test
+		double precision :: convtest, dlambda, dlambda1, dlambda2, discriminant, UincdotdUF, sig, a1, a2, a3
+		double precision, dimension (2) :: dlambda_test
 		integer, dimension (1) :: dlambda_test_res
 		
 		errinfo = 0

@@ -14,8 +14,6 @@
 
 module vector_algebra
 	
-	use f95_precision
-
 	implicit none
 	
 	private
@@ -29,8 +27,8 @@ module vector_algebra
 	
 		implicit none
 		
-		real (DP), dimension (3), intent (in) :: a, b
-		real (DP), dimension (3) :: cross_product
+		double precision, dimension (3), intent (in) :: a, b
+		double precision, dimension (3) :: cross_product
 		
 		cross_product(1) = a(2) * b(3) - a(3) * b(2)
 		cross_product(2) = a(3) * b(1) - a(1) * b(3)
@@ -43,8 +41,8 @@ module vector_algebra
 	
 		implicit none
 		
-		real (DP), dimension (3), intent (in) :: a, b
-		real (DP), dimension (3, 3) :: tensor_product
+		double precision, dimension (3), intent (in) :: a, b
+		double precision, dimension (3, 3) :: tensor_product
 		integer :: i, j
 		
 		do i = 1, 3
@@ -61,8 +59,8 @@ module vector_algebra
 		
 		implicit none
 		
-		real (DP), dimension (3), intent (in) :: r
-		real (DP), dimension (3, 3) :: skew
+		double precision, dimension (3), intent (in) :: r
+		double precision, dimension (3, 3) :: skew
 		
 		skew (1, 1) = 0.0_DP
 		skew (1, 2) = - r (3)
@@ -82,8 +80,8 @@ module vector_algebra
 	
 		implicit none
 		
-		real (DP), dimension (3), intent (in) :: r
-		real (DP), dimension (3, 3) :: skew2
+		double precision, dimension (3), intent (in) :: r
+		double precision, dimension (3, 3) :: skew2
 		
 		skew2 (1, 1) = - (r (2) ** 2 + r (3) ** 2)
 		skew2 (1, 2) = r (1) * r (2)
@@ -103,9 +101,9 @@ module vector_algebra
 		
 		implicit none
 		
-		real (DP), dimension (3), intent (in) :: r
-		real (DP), dimension (3, 3) :: T, T1, T2, I, S, S2
-		real (DP) :: sin_r, norm_r, sin_hr, norm_hr
+		double precision, dimension (3), intent (in) :: r
+		double precision, dimension (3, 3) :: T, T1, T2, I, S, S2
+		double precision :: sin_r, norm_r, sin_hr, norm_hr
 		integer :: j
 		
 		I = 0.0_DP

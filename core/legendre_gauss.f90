@@ -13,9 +13,7 @@
 ! ------------------------------------------------------------------------------
 
 module legendre_gauss
-	
-	use f95_precision
-	
+		
 	implicit none
 	
 	private
@@ -30,10 +28,10 @@ module legendre_gauss
 		implicit none
 		
 		integer, intent (in) :: n
-		real (DP), dimension (n), intent (out) :: x, w
+		double precision, dimension (n), intent (out) :: x, w
 		integer :: m, i, j
-		real (DP) :: z, z1, p1, p2, p3, pp
-		real (DP), parameter :: TOL = 1.0E-30_DP, PI = 4.0_DP * atan (1.0_DP)
+		double precision :: z, z1, p1, p2, p3, pp
+		double precision, parameter :: TOL = 1.0E-30_DP, PI = 4.0_DP * atan (1.0_DP)
 				
 		m = (n + 1) / 2
 		do i = 1, m

@@ -12,14 +12,12 @@
 !
 ! ------------------------------------------------------------------------------
 module mesh_object
-
-	use f95_precision
 	
 	implicit none
 	
 	type ElementMesh
 		integer :: Nno, Nele, order
-		real (DP), dimension (:, :), allocatable :: X0
+		double precision, dimension (:, :), allocatable :: X0
 		integer, dimension (:, :), allocatable :: ele
 	end type ElementMesh
 end module
@@ -34,7 +32,7 @@ module mesher
 	
 	private
 	
-	real (DP), parameter :: PI = 4 * atan (1.0_DP)
+	double precision, parameter :: PI = 4 * atan (1.0_DP)
 	
 	public :: lmsh, ramsh, arcmsh
 	
@@ -49,10 +47,10 @@ module mesher
 	! modify ele, X0
 	subroutine lmsh (L, mesh)
 		
-		real (DP), intent (in) :: L
+		double precision, intent (in) :: L
 		type (ElementMesh), intent (inout) :: mesh
 		integer :: i, j
-		real (DP) :: dx
+		double precision :: dx
 		
 		allocate (mesh%X0 (3, mesh%Nno), mesh%ele (mesh%Nele, mesh%order + 1))
 		
@@ -75,10 +73,10 @@ module mesher
 	! modify ele, X0
 	subroutine ramsh (L, mesh)
 		
-		real (DP), intent (in) :: L
+		double precision, intent (in) :: L
 		type (ElementMesh), intent (inout) :: mesh
 		integer :: i, j
-		real (DP) :: dx
+		double precision :: dx
 		
 		allocate (mesh%X0 (3, mesh%Nno), mesh%ele (mesh%Nele, mesh%order + 1))
 		
@@ -107,14 +105,14 @@ module mesher
 	! modify ele, X0
 	subroutine arcmsh (R, phi_i, phi_f, mesh, rot, gpts)
 		
-		real (DP), intent (in) :: R, phi_i, phi_f
+		double precision, intent (in) :: R, phi_i, phi_f
 		type (ElementMesh), intent (inout) :: mesh
-		real (DP), dimension (:, :, :, :), intent (out) :: rot
-		real (DP), dimension (:), intent (in) :: gpts
-		real (DP), dimension (mesh%order + 1) :: e
+		double precision, dimension (:, :, :, :), intent (out) :: rot
+		double precision, dimension (:), intent (in) :: gpts
+		double precision, dimension (mesh%order + 1) :: e
 		integer :: i, j
-		real (DP) :: dphi, phi1, phi2, phig
-		real (DP), dimension (3) :: rotvec
+		double precision :: dphi, phi1, phi2, phig
+		double precision, dimension (3) :: rotvec
 		
 		allocate (mesh%X0 (3, mesh%Nno), mesh%ele (mesh%Nele, mesh%order + 1))
 		

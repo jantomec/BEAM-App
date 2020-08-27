@@ -14,7 +14,6 @@
 
 module beam
 	
-	use f95_precision
 	use shape_functions
 	use legendre_gauss
 	use vector_algebra
@@ -33,13 +32,13 @@ module beam
 		implicit none
 		
 		integer, intent (in) :: g_ord
-		real (DP), dimension (:, :), intent (in) :: X0
-		real (DP) :: element_length
+		double precision, dimension (:, :), intent (in) :: X0
+		double precision :: element_length
 		integer :: e_ord, i
-		real (DP), dimension (g_ord) :: pts, wgts
-		real (DP), dimension (size (X0 (1, :)), g_ord) :: dN
-		real (DP), dimension (3, g_ord) :: dX0
-		real (DP), dimension (3) :: intg
+		double precision, dimension (g_ord) :: pts, wgts
+		double precision, dimension (size (X0 (1, :)), g_ord) :: dN
+		double precision, dimension (3, g_ord) :: dX0
+		double precision, dimension (3) :: intg
 		
 		e_ord = size (X0 (1, :)) - 1
 		
@@ -60,8 +59,8 @@ module beam
 	
 		implicit none
 		
-		real (DP), dimension (3, 3), intent (in) :: rot
-		real (DP), dimension (6, 6) :: Pi
+		double precision, dimension (3, 3), intent (in) :: rot
+		double precision, dimension (6, 6) :: Pi
 		
 		Pi = 0.0_DP
 		Pi (1:3, 1:3) = rot
@@ -74,10 +73,10 @@ module beam
 	
 		implicit none
 		
-		real (DP), dimension (:), intent (in) :: dX
-		real (DP), intent (in) :: N, dN
-		real (DP), dimension (6, 6) :: Xi
-		real (DP), dimension (3, 3) :: S
+		double precision, dimension (:), intent (in) :: dX
+		double precision, intent (in) :: N, dN
+		double precision, dimension (6, 6) :: Xi
+		double precision, dimension (3, 3) :: S
 		integer :: i
 		
 		S = skew (dX)
@@ -99,16 +98,16 @@ module beam
 		
 		implicit none
 		
-		real (DP), dimension (:, :), intent (in) :: X0, X
-		real (DP), dimension (:, :), intent (in) :: f
-		real (DP), dimension (6, size (X0(1,:))) :: Finte
+		double precision, dimension (:, :), intent (in) :: X0, X
+		double precision, dimension (:, :), intent (in) :: f
+		double precision, dimension (6, size (X0(1,:))) :: Finte
 		integer :: g_ord, nno, e_ord, g, i
-		real (DP) :: L
-		real (DP), dimension (size (f (1, :))) :: pts, wgts
-		real (DP), dimension (size (X (1, :)), size (f (1, :))) :: N, dN
-		real (DP), dimension (3, size (f (1, :))) :: dX
-		real (DP), dimension (3, 3) :: S
-		real (DP), dimension (6, 6) :: Xi_i
+		double precision :: L
+		double precision, dimension (size (f (1, :))) :: pts, wgts
+		double precision, dimension (size (X (1, :)), size (f (1, :))) :: N, dN
+		double precision, dimension (3, size (f (1, :))) :: dX
+		double precision, dimension (3, 3) :: S
+		double precision, dimension (6, 6) :: Xi_i
 		
 		g_ord = size (f (1, :))
 		nno = size (X (1, :))
@@ -139,14 +138,14 @@ module beam
 		
 		implicit none
 		
-		real (DP), dimension (:, :), intent (in) :: X0
-		real (DP), dimension (:, :), intent (in) :: p
-		real (DP), dimension (6, size (X0 (1,:))) :: Fexte
+		double precision, dimension (:, :), intent (in) :: X0
+		double precision, dimension (:, :), intent (in) :: p
+		double precision, dimension (6, size (X0 (1,:))) :: Fexte
 		integer :: g_ord, nno, e_ord, g, i
-		real (DP) :: L
-		real (DP), dimension (size (p (1, :))) :: pts, wgts
-		real (DP), dimension (size (X0 (1, :)), size (p (1, :))) :: N
-		real (DP), dimension (6, 6) :: H
+		double precision :: L
+		double precision, dimension (size (p (1, :))) :: pts, wgts
+		double precision, dimension (size (X0 (1, :)), size (p (1, :))) :: N
+		double precision, dimension (6, 6) :: H
 		
 		g_ord = size (p (1, :))
 		nno = size (X0 (1, :))
@@ -180,20 +179,20 @@ module beam
 		
 		implicit none
 		
-		real (DP), dimension (:, :), intent (in) :: X0, X, th
-		real (DP), dimension (6, 6), intent (in) :: C
-		real (DP), dimension (:, :, :), intent (inout) :: rot
-		real (DP), dimension (:, :), intent (inout) :: om
-		real (DP), dimension (:, :), intent (out) :: f
+		double precision, dimension (:, :), intent (in) :: X0, X, th
+		double precision, dimension (6, 6), intent (in) :: C
+		double precision, dimension (:, :, :), intent (inout) :: rot
+		double precision, dimension (:, :), intent (inout) :: om
+		double precision, dimension (:, :), intent (out) :: f
 		integer :: g_ord, nno, e_ord, g
-		real (DP) :: L
-		real (DP), dimension (size (om (1, :))) :: pts, wgts
-		real (DP), dimension (size (X (1, :)), size (om (1, :))) :: N, dN
-		real (DP), dimension (3, size (om (1, :))) :: dX, t, dt
-		real (DP), dimension (size (om (1, :))) :: tn
-		real (DP), dimension (3, 3) :: R, rotinv
-		real (DP), dimension (3) ::  b1, b2, b3, a1, a2, a3, Gamma, kappa, fn, fm
-		real (DP), dimension (3), parameter :: E3 = (/ 0.0_DP, 0.0_DP, 1.0_DP /)
+		double precision :: L
+		double precision, dimension (size (om (1, :))) :: pts, wgts
+		double precision, dimension (size (X (1, :)), size (om (1, :))) :: N, dN
+		double precision, dimension (3, size (om (1, :))) :: dX, t, dt
+		double precision, dimension (size (om (1, :))) :: tn
+		double precision, dimension (3, 3) :: R, rotinv
+		double precision, dimension (3) ::  b1, b2, b3, a1, a2, a3, Gamma, kappa, fn, fm
+		double precision, dimension (3), parameter :: E3 = (/ 0.0_DP, 0.0_DP, 1.0_DP /)
 		
 		g_ord = size (om (1, :))
 		nno = size (X0 (1, :))
@@ -245,16 +244,16 @@ module beam
 		
 		implicit none
 		
-		real (DP), dimension (:, :), intent (in) :: X0, X
-		real (DP), dimension (:, :, :), intent (in) :: rot
-		real (DP), dimension (6, 6), intent (in) :: C
-		real (DP), dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Ke
+		double precision, dimension (:, :), intent (in) :: X0, X
+		double precision, dimension (:, :, :), intent (in) :: rot
+		double precision, dimension (6, 6), intent (in) :: C
+		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Ke
 		integer :: g_ord, nno, e_ord, g, i, j, ii, ij
-		real (DP) :: L
-		real (DP), dimension (size (rot (:, 1, 1))) :: pts, wgts
-		real (DP), dimension (size (X (1, :)), size (rot (:, 1, 1))) :: N, dN
-		real (DP), dimension (3, size (rot (:, 1, 1))) :: dX
-		real (DP), dimension (6, 6) :: Pi_g, Xi_i, Xi_j, c_g
+		double precision :: L
+		double precision, dimension (size (rot (:, 1, 1))) :: pts, wgts
+		double precision, dimension (size (X (1, :)), size (rot (:, 1, 1))) :: N, dN
+		double precision, dimension (3, size (rot (:, 1, 1))) :: dX
+		double precision, dimension (6, 6) :: Pi_g, Xi_i, Xi_j, c_g
 		
 		g_ord = size (rot (:, 1, 1))
 		nno = size (X0 (1, :))
@@ -293,15 +292,15 @@ module beam
 		
 		implicit none
 		
-		real (DP), dimension (:, :), intent (in) :: X0, X
-		real (DP), dimension (:, :, :), intent (in) :: rot
-		real (DP), dimension (:, :), intent (in) :: f
-		real (DP), dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Kgeoe
+		double precision, dimension (:, :), intent (in) :: X0, X
+		double precision, dimension (:, :, :), intent (in) :: rot
+		double precision, dimension (:, :), intent (in) :: f
+		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Kgeoe
 		integer :: g_ord, nno, e_ord, g, i, j, ii, ij
-		real (DP) :: L
-		real (DP), dimension (size (rot (:, 1, 1))) :: pts, wgts
-		real (DP), dimension (size (X (1, :)), size (rot (:, 1, 1))) :: N, dN
-		real (DP), dimension (6, size (rot (:, 1, 1))) :: dX
+		double precision :: L
+		double precision, dimension (size (rot (:, 1, 1))) :: pts, wgts
+		double precision, dimension (size (X (1, :)), size (rot (:, 1, 1))) :: N, dN
+		double precision, dimension (6, size (rot (:, 1, 1))) :: dX
 		
 		g_ord = size (rot (:, 1, 1))
 		nno = size (X0 (1, :))
@@ -348,14 +347,14 @@ module beam
 		implicit none
 		
 		integer, dimension (:, :), intent (in) :: ele
-		real (DP), dimension (:, :), intent (in) :: X0, X
-		real (DP), dimension (:, :, :, :), intent (in) :: rot
-		real (DP), dimension (6, 6), intent (in) :: C
-		real (DP), dimension (:, :, :), intent (in) :: f
-		real (DP), dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Kg
+		double precision, dimension (:, :), intent (in) :: X0, X
+		double precision, dimension (:, :, :, :), intent (in) :: rot
+		double precision, dimension (6, 6), intent (in) :: C
+		double precision, dimension (:, :, :), intent (in) :: f
+		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Kg
 		integer :: nno, nele, neno, e, i, j, ei, ej
 		integer, dimension (size (ele (1, :))) :: ee
-		real (DP), dimension (6 * size (ele (1, :)), 6 * size (ele (1, :))) :: Kee
+		double precision, dimension (6 * size (ele (1, :)), 6 * size (ele (1, :))) :: Kee
 				
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
@@ -386,12 +385,12 @@ module beam
 		implicit none
 		
 		integer, dimension (:, :), intent (in) :: ele
-		real (DP), dimension (:, :), intent (in) :: X0, X
-		real (DP), dimension (:, :, :), intent (in) :: f
-		real (DP), dimension (6 * size (X (1, :))) :: Fintg
+		double precision, dimension (:, :), intent (in) :: X0, X
+		double precision, dimension (:, :, :), intent (in) :: f
+		double precision, dimension (6 * size (X (1, :))) :: Fintg
 		integer :: nno, nele, neno, e, i, ei
 		integer, dimension (size (ele (1, :))) :: ee
-		real (DP), dimension (6, size (ele (1, :))) :: Fie
+		double precision, dimension (6, size (ele (1, :))) :: Fie
 		
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
@@ -417,13 +416,13 @@ module beam
 		implicit none
 		
 		integer, dimension (:, :), intent (in) :: ele
-		real (DP), dimension (:, :), intent (in) :: X0
-		real (DP), dimension (:, :), intent (in) :: Q
-		real (DP), dimension (:, :, :), intent (in) :: p
-		real (DP), dimension (6 * size (X0 (1, :))) :: Fextg
+		double precision, dimension (:, :), intent (in) :: X0
+		double precision, dimension (:, :), intent (in) :: Q
+		double precision, dimension (:, :, :), intent (in) :: p
+		double precision, dimension (6 * size (X0 (1, :))) :: Fextg
 		integer :: nno, nele, neno, e, i, ei
 		integer, dimension (size (ele (1, :))) :: ee
-		real (DP), dimension (6, size (ele (1, :))) :: Fee
+		double precision, dimension (6, size (ele (1, :))) :: Fee
 		
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
@@ -451,11 +450,11 @@ module beam
 		implicit none
 		
 		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
-		real (DP), dimension (:, :), intent (in) :: X0, X, th  ! (3, no all nodes)
-		real (DP), dimension (6, 6), intent (in) :: C
-		real (DP), dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
-		real (DP), dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-		real (DP), dimension (:, :, :), intent (out) :: f  ! (no ele, 6, no gauss)
+		double precision, dimension (:, :), intent (in) :: X0, X, th  ! (3, no all nodes)
+		double precision, dimension (6, 6), intent (in) :: C
+		double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
+		double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
+		double precision, dimension (:, :, :), intent (out) :: f  ! (no ele, 6, no gauss)
 		integer :: nno, nele, e
 		integer, dimension (size (ele (1, :))) :: ee
 		

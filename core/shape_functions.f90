@@ -13,8 +13,6 @@
 ! ------------------------------------------------------------------------------
 
 module shape_functions
-
-	use f95_precision
 	
 	implicit none
 	
@@ -30,8 +28,8 @@ module shape_functions
 		implicit none
 		
 		integer, intent (in) :: e_ord
-		real (DP), dimension (:), intent (in) :: pts
-		real (DP), dimension (size (pts)) :: N1
+		double precision, dimension (:), intent (in) :: pts
+		double precision, dimension (size (pts)) :: N1
 				
 		if (e_ord == 1) then
 			N1 = -0.5_DP * pts + 0.5_DP
@@ -47,8 +45,8 @@ module shape_functions
 		implicit none
 		
 		integer, intent (in) :: e_ord
-		real (DP), dimension (:), intent (in) :: pts
-		real (DP), dimension (size (pts)) :: N2
+		double precision, dimension (:), intent (in) :: pts
+		double precision, dimension (size (pts)) :: N2
 				
 		if (e_ord == 1) then
 			N2 = 0.5_DP * pts + 0.5_DP
@@ -64,8 +62,8 @@ module shape_functions
 		implicit none
 		
 		integer, intent (in) :: e_ord
-		real (DP), dimension (:), intent (in) :: pts
-		real (DP), dimension (size (pts)) :: N3
+		double precision, dimension (:), intent (in) :: pts
+		double precision, dimension (size (pts)) :: N3
 				
 		if (e_ord == 2) then
 			N3 = 0.5_DP * pts ** 2 + 0.5_DP * pts
@@ -79,8 +77,8 @@ module shape_functions
 		implicit none
 		
 		integer, intent (in) :: e_ord
-		real (DP), dimension (:), intent (in) :: pts
-		real (DP), dimension (size (pts)) :: dN1
+		double precision, dimension (:), intent (in) :: pts
+		double precision, dimension (size (pts)) :: dN1
 				
 		if (e_ord == 1) then
 			dN1 = -0.5_DP
@@ -96,8 +94,8 @@ module shape_functions
 		implicit none
 		
 		integer, intent (in) :: e_ord
-		real (DP), dimension (:), intent (in) :: pts
-		real (DP), dimension (size (pts)) :: dN2
+		double precision, dimension (:), intent (in) :: pts
+		double precision, dimension (size (pts)) :: dN2
 				
 		if (e_ord == 1) then
 			dN2 = 0.5_DP
@@ -113,8 +111,8 @@ module shape_functions
 		implicit none
 		
 		integer, intent (in) :: e_ord
-		real (DP), dimension (:), intent (in) :: pts
-		real (DP), dimension (size (pts)) :: dN3
+		double precision, dimension (:), intent (in) :: pts
+		double precision, dimension (size (pts)) :: dN3
 				
 		if (e_ord == 2) then
 			dN3 = pts + 0.5_DP
@@ -128,8 +126,8 @@ module shape_functions
 		implicit none
 		
 		integer, intent (in) :: e_ord
-		real (DP), dimension (:), intent (in) :: pts
-		real (DP), dimension (e_ord + 1, size (pts)) :: shfun
+		double precision, dimension (:), intent (in) :: pts
+		double precision, dimension (e_ord + 1, size (pts)) :: shfun
 		
 		if (e_ord == 1) then
 			shfun (1, :) = N1 (1, pts)
@@ -152,8 +150,8 @@ module shape_functions
 		implicit none
 		
 		integer, intent (in) :: e_ord
-		real (DP), dimension (:), intent (in) :: pts
-		real (DP), dimension (e_ord + 1, size (pts)) :: shdfun
+		double precision, dimension (:), intent (in) :: pts
+		double precision, dimension (e_ord + 1, size (pts)) :: shdfun
 				
 		if (e_ord == 1) then
 			shdfun (1, :) = dN1 (1, pts)
