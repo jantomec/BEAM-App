@@ -1,0 +1,4 @@
+Source code file names conventions:
+ - small case, underscore for separator
+ - begin with compiling order number (level of dependency)
+ - use of .f90 extension for compiler to be able to infer fortran version
