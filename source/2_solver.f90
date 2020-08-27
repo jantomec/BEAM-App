@@ -95,9 +95,14 @@ module solver
 	! TOLER ........ tolerance for convergence
 	! MAXITER ...... maximum no of iterations
 	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
+	! Niter ........ integer, number of iterations used to converge
+	! errck ........ integer, indication of error:
+	!                    0 = no error
+	!                    2 = LU Factorization error (dgetrf)
+	!                    3 = Solver error (dgetrs)
 	!
 	! modify U, rot, om, f
-	subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errinfo)
+	subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errck)
 	
 		implicit none
 		
@@ -116,7 +121,7 @@ module solver
 		integer, intent (in) :: MAXITER
 		character (len = 3), intent (in) :: TEST
 		integer, intent (out) :: Niter
-		integer, intent (out) :: errinfo
+		integer, intent (out) :: errck
 		
 		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
@@ -130,7 +135,9 @@ module solver
 		integer, allocatable :: ipiv (:)
 		double precision :: convtest
 		
-		errinfo = 0.0
+		external dgetrf, dgetrs
+		
+		errck = 0
 		
 		nno = size (X0 (1, :))
 		
@@ -155,13 +162,13 @@ module solver
 				
 				call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
 				if (info .ne. 0) then
-					errinfo = 2
+					errck = 2
 					exit
 				end if	
 								
 				call dgetrs ('N', ndof, 1, K2, ndof, ipiv, R2, ndof, info)  ! solve system
 				if (info .ne. 0) then
-					errinfo = 3
+					errck = 3
 					exit
 				end if	
 				
@@ -224,7 +231,7 @@ module solver
 	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
 	!
 	! modify U, rot, om, f
-	subroutine newton_iter_det (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errinfo)
+	subroutine newton_iter_det (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errck)
 	
 		implicit none
 		
@@ -243,7 +250,7 @@ module solver
 		integer, intent (in) :: MAXITER
 		character (len = 3), intent (in) :: TEST
 		integer, intent (out) :: Niter
-		integer, intent (out) :: errinfo
+		integer, intent (out) :: errck
 		
 		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
@@ -257,7 +264,7 @@ module solver
 		integer, allocatable :: ipiv (:)
 		double precision :: convtest, tandet
 		
-		errinfo = 0.0
+		errck = 0.0
 		
 		nno = size (X0 (1, :))
 		
@@ -282,7 +289,7 @@ module solver
 				
 				call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
 				if (info .ne. 0) then
-					errinfo = 2
+					errck = 2
 					exit
 				end if	
 				
@@ -298,7 +305,7 @@ module solver
 								
 				call dgetrs ('N', ndof, 1, K2, ndof, ipiv, R2, ndof, info)  ! solve system
 				if (info .ne. 0) then
-					errinfo = 3
+					errck = 3
 					exit
 				end if	
 				
@@ -384,7 +391,7 @@ module solver
 	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
 	!
 	! modify U, rot, om, f
-	subroutine arc_length_iter (ele, X0, Uinc, U, C, DOF, Q, QC, p, rot, om, f, resout, lambda, dS, TOLER, MAXITER, Niter, errinfo)
+	subroutine arc_length_iter (ele, X0, Uinc, U, C, DOF, Q, QC, p, rot, om, f, resout, lambda, dS, TOLER, MAXITER, Niter, errck)
 	
 		implicit none
 		
@@ -405,7 +412,7 @@ module solver
 		double precision, intent (in) :: TOLER
 		integer, intent (in) :: MAXITER
 		integer, intent (out) :: Niter
-		integer, intent (out) :: errinfo
+		integer, intent (out) :: errck
 		
 		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
@@ -422,7 +429,7 @@ module solver
 		double precision, dimension (2) :: dlambda_test
 		integer, dimension (1) :: dlambda_test_res
 		
-		errinfo = 0
+		errck = 0
 		
 		nno = size (X0 (1, :))
 				
@@ -454,13 +461,13 @@ module solver
 			
 			call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
 			if (info .ne. 0) then
-				errinfo = 2
+				errck = 2
 				exit
 			end if			
 			
 			call dgetrs ('N', ndof, 2, K2, ndof, ipiv, R2, ndof, info)  ! solve system
 			if (info .ne. 0) then
-				errinfo = 3
+				errck = 3
 				exit
 			end if
 			
@@ -489,7 +496,7 @@ module solver
 				a3 = dot_product (Uinc + dURflat, Uinc + dURflat) - dS ** 2
 				
 				if (a2 ** 2 - 4 * a1 * a3 < 0) then
-					errinfo = 1
+					errck = 1
 					exit
 				end if
 				
