@@ -5,3 +5,4 @@
 *.o
 *.dat
 lib
+.DS_Store
