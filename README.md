@@ -32,9 +32,29 @@ Both examples can be seen in *Examples*.
 
 The first time you need to compile all the included libraries by executing compilation script.
 
+On Windows
+
 ```batch
 scripts\comp_win_gnu.bat
 ```
+
+On MacOS
+
+```zsh
+chmod +x scripts/comp_mac_gnu.zsh
+
+scripts/comp_mac_gnu.zsh
+```
+
+
+On Linux
+
+```sh
+chmod +x scripts/comp_lin_gnu.sh
+
+sh scripts/comp_lin_gnu.sh
+```
+
 
 
 |       | Windows            | MacOS              | Linux             |
@@ -46,8 +66,16 @@ scripts\comp_win_gnu.bat
 
 Every time you change your main program (i.e. `examples/example.f90`), you need to rebuild. This can be done by a script from the lower table.
 
+On Windows
+
 ```batch
 scripts\build_win_gnu.bat examples\example.f90
+```
+
+or Linux
+
+```bash
+sh scripts/build_lin_gnu.sh examples/example.f90
 ```
 
 |       | Windows            | MacOS              | Linux             |
@@ -58,9 +86,16 @@ scripts\build_win_gnu.bat examples\example.f90
 
 ### Running a program
 
-Use a line
+On Windows use a line
+
 ```batch
-scripts\build_win_gnu.bat examples\test01.f90
+test01.exe
+```
+
+on Linux/MacOS do
+
+```bash
+./test01.exe
 ```
 
 ## Requirements
@@ -85,10 +120,25 @@ Install GNU Fortran compiler.
 brew install gcc
 ```
 
+### Installing on Linux
+
+Install GNU Fortran compiler.
+
+``` sh
+sudo apt update
+
+sudo apt install build-essential
+
+sudo apt-get install manpages-dev
+
+sudo apt install gfortran
+```
+
 
 ## Contribution
 
 If you like this project and think you can contribute, please do not hesitate to contact me.
+
 
 
 
