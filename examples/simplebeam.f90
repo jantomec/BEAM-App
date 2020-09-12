@@ -6,7 +6,7 @@ program example
 	
 	character (len=100)							:: LineIn = ''
 	character (len=10)							:: string = ''
-	integer										:: lenLineIn
+	integer										:: lenLineIn, startValue, endValue
 	double precision							:: length, nel_d
 	integer, dimension (1, 2)					:: ele
 	double precision, dimension (3, 2)			:: X0, U
