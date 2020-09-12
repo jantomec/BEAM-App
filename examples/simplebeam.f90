@@ -72,7 +72,7 @@ program example
 	
 	! Write the html results page to the browser,
 	! with the sum of the two numbers.
-	write (*, '(1X,''<html><body>'')')
-	WRITE(*, (1X, '<p>Success! The sum of the two numbers is given below:</p>', E12.4)) length
-	write (*, '(1X,''</html></body>'')')
+	write (*, '(1X,"<html><body>")')
+	WRITE(*, '(1X, "<p>Success! The sum of the two numbers is given below:</p>", E12.4)') length
+	write (*, '(1X,"</html></body>")')
 end program example
