@@ -61,7 +61,7 @@ program example
 		rot (1, 1, i, i) = 1
 	end do
 	
-	call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck)
+	!call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck)
 	
 	!print *, U (:, 2)
 	!print *, rot (1, 1, :, :)
@@ -73,7 +73,7 @@ program example
 	! Write the html results page to the browser,
 	! with the sum of the two numbers.
 	write (*, '(1X,"<html><body>")')
-	write (*, '(1X, "<p>Success! The sum of the two numbers is given below:</p>", E12.4)') 1.0
+	write (*, '(1X, "<p>Success! The result is given below:</p>", E12.4)') 1.0
 	write (*, '(1X,"</html></body>")')
 	
 end program example
