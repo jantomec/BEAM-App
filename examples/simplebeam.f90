@@ -20,27 +20,26 @@ program example
 	double precision, parameter					:: TOLER = 1D-5
 	integer										:: i, Niter, errck
 
-	write (*,*) "1"
 	! Determine the length of the data string
     ! that is to be read in the next section.
 	call Get_Environment_Variable('CONTENT_LENGTH', string)
 	read (string, *) lenLineIn
-	write (*,*) "2"
+
 	! Read the data from the html form into the
 	! variable LineIn, a single character at a time.
 	do i = 1, lenLineIn
 		read (*, ADVANCE='NO', FMT='(A)') LineIn(i:i)
 	end do
-	write (*,*) "3"
+	
 	! Locate and read the value of 'length' from LineIn (name in html form)
 	startValue = index (LineIn, 'length=') + 7
 	endValue = startValue + index(LineIn(startValue:), '&') - 2
 	read (LineIn(startValue:endValue), *) length
-	write (*,*) "4"
+	
 	! Locate and read the value of 'nel' from LineIn
 	startValue = index(LineIn,'nel=') + 4
 	read (LineIn(startValue:), *) nel_d
-	write (*,*) "5"
+	
 	ele (1, :) = (/ 1, 2 /)
 	X0 (:, 1) = (/ 0.0D1, 0.0D1, 0.0D1 /)
 	X0 (:, 2) = (/ 1.0D1, 2.0D1, 3.0D1 /)
@@ -64,13 +63,13 @@ program example
 	
 	call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck)
 	
-	print *, U (:, 2)
-	print *, rot (1, 1, :, :)
+	!print *, U (:, 2)
+	!print *, rot (1, 1, :, :)
 
 	! Send a header to the browser, identifying
 	! the type of information that will be sent.
-	write (*,'(''Content-type: text/html'',//)')
-	write (*,*) "6"
+	write (*,'("Content-type: text/html",//)')
+	
 	! Write the html results page to the browser,
 	! with the sum of the two numbers.
 	write (*, '(1X,"<html><body>")')
