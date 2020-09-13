@@ -69,7 +69,7 @@ program example
 
 	! Send a header to the browser, identifying
 	! the type of information that will be sent.
-	write (*,'('' Content-type: text/html'',//)')
+	write (*,'(''Content-type: text/html'',//)')
 	write (*,*) "6"
 	! Write the html results page to the browser,
 	! with the sum of the two numbers.
