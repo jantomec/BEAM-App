@@ -115,7 +115,7 @@ program example
 	! HTML OUTPUT
 	
 	write (*, '(1X, "<p>Success!</p>")')
-	call htmlmatrix (X, 3, Nno)
+	!call htmlmatrix (X, 3, Nno)
 	write (*, '(1X,"</html></body>")')
 	
 end program example
@@ -126,13 +126,9 @@ subroutine htmlmatrix (A, ndim, n)
 	
 	double precision, dimension (ndim,n), intent(in) 	:: A
 	integer 											:: i, ndim, n
-		
-	write (*,'("<p>")')
 	
 	do i = 1, size(A (1, :))
-		write (*,*) A (:, i)
+		write (*, '("<p>", ndimf5.1, "</p>")') A (:, i)
 	end do
-	
-	write (*,'("</p>")')
-	
+		
 end subroutine htmlmatrix
