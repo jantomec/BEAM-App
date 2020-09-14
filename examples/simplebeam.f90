@@ -51,18 +51,23 @@ program example
 	write (*, '("Content-type: text/html",//)')
 	
 	! Begin with html
-	write (*, '(1X, A)') '<html><body>'
+	write (*, *) '<html><body>'
 	
 	! =================================================
 	! MESH
-	Nele = 10!int (nel_d)
+	Nele = int (nel_d)
 	order = 1
 	Ngauss = order
 	Nno = Nele * order + 1
+	
+	allocate (X (3, Nno), U (3, Nno), DOF (6, Nno), dU (6, Nno), Q (6, Nno))
+	allocate (p (Nele, 6, Ngauss), f (Nele, 6, Ngauss), om (Nele, 3, Ngauss))
+	allocate (rot (Nele, Ngauss, 3, 3), R (6, Nno))
+		
 	mesh%Nno = Nno
 	mesh%Nele = Nele
 	mesh%order = 1
-	call lmsh (1.0D1, mesh)
+	call lmsh (length, mesh)
 	do i = 1, Nele
 		do j = 1, Ngauss
 			rot (i, j, 1, :)= (/ 1.0D1, 0.0D1, 0.0D1 /)
@@ -70,10 +75,6 @@ program example
 			rot (i, j, 3, :)= (/ 0.0D1, 0.0D1, 1.0D1 /)
 		end do
 	end do
-	
-	allocate (X (3, Nno), U (3, Nno), DOF (6, Nno), dU (6, Nno), Q (6, Nno))
-	allocate (p (Nele, 6, Ngauss), f (Nele, 6, Ngauss), om (Nele, 3, Ngauss))
-	allocate (rot (Nele, Ngauss, 3, 3), R (6, Nno))
 	
 	! =================================================
 	! ELASTIC MODULI MATRIX
@@ -114,9 +115,9 @@ program example
 	! =================================================
 	! HTML OUTPUT
 	
-	write (*, '(1X, A)') '<p>Success!</p>'
-	!call htmlmatrix (X, 3, Nno)
-	write (*, '(1X, A)') '</body></html>'
+	write (*, *) '<p>Success!</p>'
+	call htmlmatrix (X, 3, Nno)
+	write (*, *) '</body></html>'
 	
 end program example
 
