@@ -21,6 +21,7 @@ program example
 	double precision, allocatable				:: om (:,:,:)
 	double precision, allocatable				:: rot (:,:,:,:)
 	double precision, allocatable				:: R (:,:)
+	double precision, dimension (6), parameter	:: material = (/ 1.0D1, 1.0D1, 1.0D1, 1.0D1, 2.0D1, 1.0D1 /)
 	integer, parameter							:: MAXITER = 20
 	double precision, parameter					:: TOLER = 1D-5
 	integer										:: i, j, Niter, info
