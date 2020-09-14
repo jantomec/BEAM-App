@@ -138,6 +138,7 @@ subroutine htmlmatrix (A, ndim, n)
 			arrayfmt = arrayfmt//numfmt
 		end do
 		arrayfmt = arrayfmt//'</tr>'
+		write (*,*) arrayfmt
 	end do	
 	write (*,*) '</table>'
 	
