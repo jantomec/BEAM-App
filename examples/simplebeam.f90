@@ -228,6 +228,10 @@ subroutine htmlplot (x, y, n)
 		v (i) = (y (i) - miny) / d * 400
 	end do
 
+	do i = 1, n
+		write (*,'(f5.1, ", ", f5.1)') u (i), v (i)
+	end do
+
 	! Create canvas
 	write (*,*) '<canvas id="myCanvas" width="400" height="400" style="border:1px solid #000000;"></canvas>'
 
