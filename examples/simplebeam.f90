@@ -40,6 +40,15 @@ program example
 	!startValue = index(LineIn,'nel=') + 4
 	!read (LineIn(startValue:), *) nel_d
 	
+	! Send a header to the browser, identifying
+	! the type of information that will be sent.
+	write (*, '("Content-type: text/html",//)')
+	
+	! Write the html results page to the browser,
+	! with the sum of the two numbers.
+	write (*, '(1X,"<html><body>")')
+	write (*, *) "<p>"
+	
 	ele (1, :) = (/ 1, 2 /)
 	X0 (:, 1) = (/ 0.0D1, 0.0D1, 0.0D1 /)
 	X0 (:, 2) = (/ 1.0D1, 2.0D1, 3.0D1 /)
@@ -61,18 +70,12 @@ program example
 		rot (1, 1, i, i) = 1
 	end do
 	
-	!call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck)
+	call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck)
 	
 	!print *, U (:, 2)
 	!print *, rot (1, 1, :, :)
 
-	! Send a header to the browser, identifying
-	! the type of information that will be sent.
-	write (*,'("Content-type: text/html",//)')
-	
-	! Write the html results page to the browser,
-	! with the sum of the two numbers.
-	write (*, '(1X,"<html><body>")')
+	write (*, *) "</p>"
 	write (*, '(1X, "<p>Success! The result is given below:</p>", E12.4)') 1.0
 	write (*, '(1X,"</html></body>")')
 	
