@@ -115,7 +115,7 @@ program example
 	! HTML OUTPUT
 	
 	write (*, '(1X, "<p>Success!</p>")')
-	call htmlmatrix (X, 3, Nno))
+	call htmlmatrix (X, 3, Nno)
 	write (*, '(1X,"</html></body>")')
 	
 end program example
