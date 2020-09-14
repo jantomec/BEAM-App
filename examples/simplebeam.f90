@@ -204,19 +204,42 @@ subroutine htmlinput (names, data, n)
 	
 end subroutine htmlinput
 
-subroutine htmlplot ()
+subroutine htmlplot (x, y, n)
 
 	implicit none
 
+	integer												:: n, i
+	double precision, dimension (n), intent(in) 		:: x, y, u, v
+	double precision									:: minx, miny, maxx, maxy, dx, dy, d
+
+	! Compute points locations
+	minx = minval (x)
+	maxx = maxval (x)
+	miny = minval (y)
+	maxy = maxval (y)
+	dx = maxx - minx
+	dy = maxy - miny
+
+	d = max (dx, dy)
+
+	do i = 1, n
+		u (i) = (x (i) - minx) / d * 400
+		v (i) = (y (i) - miny) / d * 400
+	end do
+
 	! Create canvas
-	write (*,*) '<canvas id="myCanvas" width="200" height="100" style="border:1px solid #000000;"></canvas>'
+	write (*,*) '<canvas id="myCanvas" width="400" height="400" style="border:1px solid #000000;"></canvas>'
 
 	! Draw points
 	write (*,*) '<script>'
 	write (*,*) 'var canvas = document.getElementById("myCanvas");'
-	write (*,*) 'var ctx = canvas.getContext("2d");'
-	write (*,*) 'ctx.fillStyle = "#FF0000";'
-	write (*,*) 'ctx.fillRect(0,0,150,75);'
+	write (*,*) 'var ctx = canvas.getcontext("2d");'
+	write (*,*) 'ctx.fillStyle = "green"';
+	do i = 1, n
+		write (*,*) 'ctx.beginPath();'
+		write (*,'("ctx.arc(", f5.1, ", ", f5.1, ", 2, 0, 2 * Math.PI, false);")') u (i), v (i)
+		write (*,*) 'ctx.fill();'
+	end do
 	write (*,*) '</script>'
 
 end subroutine htmlplot
