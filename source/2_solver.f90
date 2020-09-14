@@ -8,7 +8,8 @@
 ! maintainer ... Jan Tomec
 ! email ........ jan.tomec@gradri.uniri.hr
 ! status ....... Development
-! date ......... 06/09/2020
+! date created.. 06/09/2020
+! date modified. 09/14/2020
 !
 ! ------------------------------------------------------------------------------
 
@@ -102,7 +103,7 @@ module solver
 	!                    3 = Solver error (dgetrs)
 	!
 	! modify U, rot, om, f
-	subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errck)
+	subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errck, prints)
 	
 		implicit none
 		
@@ -122,6 +123,7 @@ module solver
 		character (len = 3), intent (in) :: TEST
 		integer, intent (out) :: Niter
 		integer, intent (out) :: errck
+		logical, intent (in) :: prints  ! if the statements should be printed
 		
 		integer :: nno, ndof, i, j, info
 		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
@@ -148,7 +150,7 @@ module solver
 		allocate (K2 (ndof, ndof))
 		allocate (R1 (ndof), R2 (ndof, 1), ipiv (ndof))
 		
-		call begin_table ('N')
+		if (prints) call begin_table ('N')
 		
 		do i = 0, MAXITER-1
 			
@@ -196,7 +198,7 @@ module solver
 			if (TEST .eq. 'RSD') convtest = norm2 (R1)
 			if (TEST .eq. 'DSP') convtest = norm2 (R2)
 			
-			write (6, '(I4, X, "|", X, ES20.13)') i, convtest
+			if (prints) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
 			if (convtest < TOLER) exit
 			
 			R2 (:, 1) = -R1  ! invert and verticalize residual
@@ -206,7 +208,7 @@ module solver
 		resout = reshape (R, (/ 6, nno /))
 		
 		if (i .eq. MAXITER) then
-			write (6, '(/, "Not converging")')
+			if (prints) write (6, '(/, "Not converging")')
 			stop
 		end if
 		

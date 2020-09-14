@@ -88,7 +88,7 @@ program cantilever
 			if (j > 0) then
 				write (6, '(/, "Step", X, I3)') j
 				Q (5, Nno) = Q (5, Nno) + Q0 / nsteps (1)
-				call newton_iter (mesh%ele, mesh%X0, U, C, DOF, dU, Q, p, rot, om, f, R, TOLER, MAXITER, 'RSD', Niter, info)
+				call newton_iter (mesh%ele, mesh%X0, U, C, DOF, dU, Q, p, rot, om, f, R, TOLER, MAXITER, 'RSD', Niter, info, .TRUE.)
 			end if
 			
 			X (1, :) = mesh%X0 (1, :) + U (1, :)

@@ -37,7 +37,7 @@ program example
 		rot (1, 1, i, i) = 1
 	end do
 	
-	call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck)
+	call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck, .TRUE.)
 	
 	print *, U (:, 2)
 	print *, rot (1, 1, :, :)
