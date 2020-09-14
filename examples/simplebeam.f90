@@ -201,3 +201,20 @@ subroutine htmlinput (names, data, n)
 	write (*,*) '</table>'
 	
 end subroutine htmlinput
+
+subroutine htmlplot ()
+
+	implicit none
+
+	! Create canvas
+	write (*,*) '<canvas id="myCanvas" width="200" height="100" style="border:1px solid #000000;"></canvas>'
+
+	! Draw points
+	write (*,*) '<script>'
+	write (*,*) 'var canvas = document.getElementById("myCanvas");'
+	write (*,*) 'var ctx = canvas.getContext("2d");'
+	write (*,*) 'ctx.fillStyle = "#FF0000";'
+	write (*,*) 'ctx.fillRect(0,0,150,75);'
+	write (*,*) '</script>'
+
+end subroutine htmlplot
