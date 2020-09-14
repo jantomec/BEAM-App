@@ -237,7 +237,7 @@ subroutine htmlplot (x, y, n)
 	! Create canvas
 	
 	write (*,*) '<canvas id="myCanvas"'
-	write (*, '(A, I3, A, I3, A)') 'width="', w, '" height="', h, '" style="border:1px solid #000000;">'
+	write (*, '(4X, A, I3, A, I3, A)') 'width="', w, '" height="', h, '" style="border:1px solid #000000;">'
 	write (*,*) '</canvas>'
 
 	! Draw points
@@ -252,6 +252,7 @@ subroutine htmlplot (x, y, n)
 		if (i.lt.n) then
 			write (*, '("ctx.moveTo(", f5.1, ", ", f5.1, ");")') u (i), v (i)
 			write (*, '("ctx.lineTo(", f5.1, ", ", f5.1, ");")') u (i+1), v (i+1)
+			write (*,*) 'ctx.stroke();'
 		end if
 	end do
 	write (*,*) '</script>'
