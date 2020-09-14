@@ -235,9 +235,10 @@ subroutine htmlplot (x, y, n)
 
 
 	! Create canvas
-
-	write (*, '(A, I3, A, I3, A)') '<canvas id="myCanvas" width="', w, &
-		'" height="', h, '" style="border:1px solid #000000;"></canvas>'
+	
+	write (*,*) '<canvas id="myCanvas"'
+	write (*, '(A, I3, A, I3, A)') 'width="', w, '" height="', h, '" style="border:1px solid #000000;">'
+	write (*,*) '</canvas>'
 
 	! Draw points
 	write (*,*) '<script>'
