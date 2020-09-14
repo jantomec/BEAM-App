@@ -1,6 +1,8 @@
 program example
 
 	use solver
+	use mesher
+	use mesh_object
 	
 	implicit none
 	
@@ -8,18 +10,21 @@ program example
 	character (len=10)							:: string = ''
 	integer										:: lenLineIn, startValue, endValue
 	double precision							:: length, nel_d
-	integer, dimension (1, 2)					:: ele
-	double precision, dimension (3, 2)			:: X0, U
+	
+	integer										:: Nele, Nno, order, Ngauss
+	type (ElementMesh) 							:: mesh
+	double precision, allocatable 				:: X (:,:), U (:,:)
 	double precision, dimension (6, 6)			:: C
-	logical, dimension (6, 2)					:: DOF
-	double precision, dimension (6, 2)			:: dU, Q, res
-	double precision, dimension (1, 6, 1)		:: p, f
-	double precision, dimension (1, 3, 1)		:: om
-	double precision, dimension (1, 1, 3, 3)	:: rot
+	logical, allocatable						:: DOF (:,:)
+	double precision, allocatable				:: dU (:,:), Q (:,:)
+	double precision, allocatable				:: p (:,:,:), f (:,:,:)
+	double precision, allocatable				:: om (:,:,:)
+	double precision, allocatable				:: rot (:,:,:)
+	double precision, allocatable				:: R (:,:)
 	integer, parameter							:: MAXITER = 20
 	double precision, parameter					:: TOLER = 1D-5
 	integer										:: i, Niter, errck
-
+	
 	! Determine the length of the data string
     ! that is to be read in the next section.
 	call Get_Environment_Variable('CONTENT_LENGTH', string)
@@ -44,35 +49,92 @@ program example
 	! the type of information that will be sent.
 	write (*, '("Content-type: text/html",//)')
 	
-	! Write the html results page to the browser,
-	! with the sum of the two numbers.
+	! Begin with html
 	write (*, '(1X,"<html><body>")')
 	
-	ele (1, :) = (/ 1, 2 /)
-	X0 (:, 1) = (/ 0.0D1, 0.0D1, 0.0D1 /)
-	X0 (:, 2) = (/ 1.0D1, 2.0D1, 3.0D1 /)
-	U = 0.0D1
-	C = 0.0D1
-	do i = 1, 6
-		C (i, i) = 1.0D1
+	! =================================================
+	! MESH
+	Nele = int (nel_d)
+	order = 1
+	Ngauss = order
+	Nno = Nele * order + 1
+	mesh%Nno = Nno
+	mesh%Nele = Nele
+	mesh%order = 1
+	call lmsh (length, mesh)
+	do i = 1, Nele
+		do j = 1, Ngauss
+			rot (i, j, 1, :)= (/ 1.0D1, 0.0D1, 0.0D1 /)
+			rot (i, j, 2, :)= (/ 0.0D1, 1.0D1, 0.0D1 /)
+			rot (i, j, 3, :)= (/ 0.0D1, 0.0D1, 1.0D1 /)
+		end do
 	end do
-	DOF (:, 1) = .FALSE.
-	DOF (:, 2) = .TRUE.
-	dU = 0.0D1
-	Q = 0.0D1
-	Q (2, 2) = 0.001
+	
+	allocate (X (3, Nno), U (3, Nno), DOF (6, Nno), dU (6, Nno), Q (6, Nno))
+	allocate (p (Nele, 6, Ngauss), f (Nele, 6, Ngauss), om (Nele, 3, Ngauss))
+	allocate (rot (Nele, Ngauss, 3, 3), R (6, Nno))
+	
+	! =================================================
+	! ELASTIC MODULI MATRIX
+	C = 0.0D1  ! add material
+	do i = 1, 6
+		C (i, i) = material (i)
+	end do
+	
+	
+	! =================================================
+	! DATA INITIALIZATION
+	U = 0.0D1
 	p = 0.0D1
 	f = 0.0D1
 	om = 0.0D1
-	rot = 0.0D1
-	do i = 1, 3
-		rot (1, 1, i, i) = 1
+	
+	! =================================================
+	! BOUNDARY CONDITIONS
+	DOF = .TRUE.
+	DOF (:, 1) = .FALSE.
+	dU = 0.0D1
+	Q = 0.0D1
+	
+	! =================================================
+	! FORCE CONTROL ROUTINE
+	do j = 0, 10
+		if (j > 0) then
+			Q (5, Nno) = Q (5, Nno) + Q0 / nsteps (1)
+			call newton_iter (mesh%ele, mesh%X0, U, C, DOF, dU, Q, p, rot, om, f, R, TOLER, MAXITER, 'RSD', Niter, info, .FALSE.)
+		end if
+		
+		X (1, :) = mesh%X0 (1, :) + U (1, :)
+		X (2, :) = mesh%X0 (2, :) + U (2, :)
+		X (3, :) = mesh%X0 (3, :) + U (3, :)
+				
 	end do
+		
+	! =================================================
+	! HTML OUTPUT
 	
-	call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck, .FALSE.)
-	
-	write (*, '(1X, "<p>Success! The length is given below:</p>", E12.4)') length
-	write (*, '(1X, "<p>Success! The no of elements is given below:</p>", E12.4)') nel_d
+	write (*, '(1X, "<p>Success!</p>")')
+	call htmlmatrix (X)
 	write (*, '(1X,"</html></body>")')
 	
 end program example
+
+subroutine htmlmatrix (A)
+		
+	implicit none
+	
+	double precision, dimension (:,:) 	:: A
+	integer 							:: i, ndim, n
+	
+	ndim = size (A)
+	n = size (A (1,:))
+	
+	write (*,'("<p>")')
+	
+	do i = 1, size(A (1, :))
+		write (*,*) A (:, i)
+	end do
+	
+	write (*,'("</p>")')
+	
+end subroutine htmlmatrix
