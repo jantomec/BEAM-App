@@ -225,8 +225,8 @@ subroutine htmlplot (x, y, n)
 	d = 1.2 * d
 
 	do i = 1, n
-		u (i) = (x (i) - minx) / d * 400 + 0.1*d
-		v (i) = 400 - (y (i) - miny) / d * 400 - 0.1*d
+		u (i) = (x (i) - minx) / d * 400 + 0.05*d
+		v (i) = 400 - (y (i) - miny) / d * 400 - 0.05*d
 	end do
 
 	! Create canvas
