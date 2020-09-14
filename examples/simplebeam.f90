@@ -114,7 +114,7 @@ program example
 	! =================================================
 	! HTML OUTPUT
 	
-	write (*, '(1X, "<p>Success!</p>")')
+	write (*, '(1X, A)') '<p>Success!</p>'
 	!call htmlmatrix (X, 3, Nno)
 	write (*, '(1X,"</html></body>")')
 	
