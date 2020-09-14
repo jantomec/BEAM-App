@@ -25,6 +25,7 @@ program example
 	integer, parameter							:: MAXITER = 20
 	double precision, parameter					:: TOLER = 1D-5
 	integer										:: i, j, Niter, info
+	character (len=5), dimension (ndim)			:: labels
 	
 	! Determine the length of the data string
     ! that is to be read in the next section.
@@ -116,29 +117,44 @@ program example
 	! HTML OUTPUT
 	
 	write (*, *) '<p>Success!</p>'
-	call htmlmatrix (X, 3, Nno)
+	labels (1) = 'x'
+	labels (2) = 'y'
+	labels (3) = 'z'
+	call htmlmatrix (X, labels, 3, Nno)
 	write (*, *) '</body></html>'
 	
 end program example
 
-subroutine htmlmatrix (A, ndim, n)
+subroutine htmlmatrix (A, b, ndim, n)
 		
 	implicit none
 	
 	double precision, dimension (ndim,n), intent(in) 	:: A
+	character (len=5), dimension (ndim), intent(in)		:: b
 	integer 											:: i, j, ndim, n
 	character (len = 140)								:: arrayfmt
 	character (len = 30)								:: numfmt
 	
 	write (*,*) '<table style="width:33%">'
-	do i = 1, n
-		arrayfmt = '<tr>'
-		do j = 1, ndim	
-			write (numfmt,'("<th>", f10.3, "</th>")') A (j, i)
-			arrayfmt = trim (arrayfmt) // trim (numfmt)
-		end do
-		arrayfmt = arrayfmt//'</tr>'
-		write (*,*) arrayfmt
+	write (*,*) '<tr><th>i</th><th>x</th><th>y</th><th>z</th></tr>'
+	do i = 0, n
+		if (i.eq.0) then
+			write (arrayfmt, '("<tr><th>", A, "</th>")') 'i'
+			do j = 1, ndim	
+				write (numfmt,'("<th>", A, "</th>")') b (j)
+				arrayfmt = trim (arrayfmt) // trim (numfmt)
+			end do
+			arrayfmt = arrayfmt//'</tr>'
+			write (*,*) arrayfmt
+		else
+			write (arrayfmt, '("<tr><th>", i3, "</th>")') i
+			do j = 1, ndim	
+				write (numfmt,'("<th>", f10.3, "</th>")') A (j, i)
+				arrayfmt = trim (arrayfmt) // trim (numfmt)
+			end do
+			arrayfmt = arrayfmt//'</tr>'
+			write (*,*) arrayfmt
+		end if
 	end do	
 	write (*,*) '</table>'
 	
