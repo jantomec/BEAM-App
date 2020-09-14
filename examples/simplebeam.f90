@@ -126,13 +126,19 @@ subroutine htmlmatrix (A, ndim, n)
 	implicit none
 	
 	double precision, dimension (ndim,n), intent(in) 	:: A
-	integer 											:: i, ndim, n
-	character (len = 80)								:: arrayfmt
+	integer 											:: i, j, ndim, n
+	character (len = 140)								:: arrayfmt
+	character (len = 10)								:: numfmt
 	
-	write (arrayfmt, '(A, i5, A)') '("<p>", ', ndim, 'f5.1, "</p>")'
+	write (*,*) '<table style="width:33%">'
+	do i = 1, n
+		arrayfmt = '<tr>'
+		do j = 1, ndim	
+			write (numfmt,'("<th>", f10.3, "</th>")') A (:, i)
+			arrayfmt = arrayfmt//numfmt
+		end do
+		arrayfmt = arrayfmt//'</tr>'
+	end do	
+	write (*,*) '</table>'
 	
-	do i = 1, size(A (1, :))
-		write (*, arrayfmt) A (:, i)
-	end do
-		
 end subroutine htmlmatrix
