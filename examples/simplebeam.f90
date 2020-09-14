@@ -131,6 +131,8 @@ program example
 	labels (3) = 'z'
 	call htmlmatrix (X, labels, 3, Nno)
 	write (*, *) '</body></html>'
+
+	call htmlplot ()
 	
 end program example
 
