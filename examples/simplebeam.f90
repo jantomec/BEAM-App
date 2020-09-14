@@ -208,10 +208,10 @@ subroutine htmlplot (x, y, n)
 
 	implicit none
 
-	integer												:: n, i
+	integer												:: n, i, w, h
 	double precision, dimension (n), intent(in) 		:: x, y
 	double precision, dimension (n)						:: u, v
-	double precision									:: minx, miny, maxx, maxy, dx, dy, d, w, h
+	double precision									:: minx, miny, maxx, maxy, dx, dy, d
 
 	! Set plot pixel width and height
 	w = 400
@@ -236,9 +236,8 @@ subroutine htmlplot (x, y, n)
 
 	! Create canvas
 	
-	write (*,*) u
 	write (*,*) '<canvas id="myCanvas"'
-	write (*, '(A, I3, A, I3, A)') 'width="', 400, '" height="', 400, '" style="border:1px solid #000000;">'
+	write (*, '(A, I3, A, I3, A)') 'width="', w, '" height="', h, '" style="border:1px solid #000000;">'
 	write (*,*) '</canvas>'
 
 	! Draw points
