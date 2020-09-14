@@ -70,15 +70,15 @@ program example
 	call lmsh (length, mesh)
 	do i = 1, Nele
 		do j = 1, Ngauss
-			rot (i, j, 1, :)= (/ 1.0D1, 0.0D1, 0.0D1 /)
-			rot (i, j, 2, :)= (/ 0.0D1, 1.0D1, 0.0D1 /)
-			rot (i, j, 3, :)= (/ 0.0D1, 0.0D1, 1.0D1 /)
+			rot (i, j, 1, :)= (/ 1.0D0, 0.0D0, 0.0D0 /)
+			rot (i, j, 2, :)= (/ 0.0D0, 1.0D0, 0.0D0 /)
+			rot (i, j, 3, :)= (/ 0.0D0, 0.0D0, 1.0D0 /)
 		end do
 	end do
 	
 	! =================================================
 	! ELASTIC MODULI MATRIX
-	C = 0.0D1  ! add material
+	C = 0.0D0  ! add material
 	do i = 1, 6
 		C (i, i) = material (i)
 	end do
@@ -86,17 +86,17 @@ program example
 	
 	! =================================================
 	! DATA INITIALIZATION
-	U = 0.0D1
-	p = 0.0D1
-	f = 0.0D1
-	om = 0.0D1
+	U = 0.0D0
+	p = 0.0D0
+	f = 0.0D0
+	om = 0.0D0
 	
 	! =================================================
 	! BOUNDARY CONDITIONS
 	DOF = .TRUE.
 	DOF (:, 1) = .FALSE.
-	dU = 0.0D1
-	Q = 0.0D1
+	dU = 0.0D0
+	Q = 0.0D0
 	
 	! =================================================
 	! FORCE CONTROL ROUTINE
@@ -136,7 +136,7 @@ subroutine htmlmatrix (A, ndim, n)
 	do i = 1, n
 		arrayfmt = '<tr>'
 		do j = 1, ndim	
-			write (numfmt,'("<th>", f10.3, "</th>")') A (:, i)
+			write (numfmt,'("<th>", f10.3, "</th>")') A (j, i)
 			arrayfmt = trim (arrayfmt) // trim (numfmt)
 		end do
 		arrayfmt = arrayfmt//'</tr>'
