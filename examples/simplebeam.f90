@@ -22,23 +22,23 @@ program example
 
 	! Determine the length of the data string
     ! that is to be read in the next section.
-	!call Get_Environment_Variable('CONTENT_LENGTH', string)
-	!read (string, *) lenLineIn
+	call Get_Environment_Variable('CONTENT_LENGTH', string)
+	read (string, *) lenLineIn
 
 	! Read the data from the html form into the
 	! variable LineIn, a single character at a time.
-	!do i = 1, lenLineIn
-	!	read (*, ADVANCE='NO', FMT='(A)') LineIn(i:i)
-	!end do
+	do i = 1, lenLineIn
+		read (*, ADVANCE='NO', FMT='(A)') LineIn(i:i)
+	end do
 	
 	! Locate and read the value of 'length' from LineIn (name in html form)
-	!startValue = index (LineIn, 'length=') + 7
-	!endValue = startValue + index(LineIn(startValue:), '&') - 2
-	!read (LineIn(startValue:endValue), *) length
+	startValue = index (LineIn, 'length=') + 7
+	endValue = startValue + index(LineIn(startValue:), '&') - 2
+	read (LineIn(startValue:endValue), *) length
 	
 	! Locate and read the value of 'nel' from LineIn
-	!startValue = index(LineIn,'nel=') + 4
-	!read (LineIn(startValue:), *) nel_d
+	startValue = index(LineIn,'nel=') + 4
+	read (LineIn(startValue:), *) nel_d
 	
 	! Send a header to the browser, identifying
 	! the type of information that will be sent.
@@ -47,7 +47,6 @@ program example
 	! Write the html results page to the browser,
 	! with the sum of the two numbers.
 	write (*, '(1X,"<html><body>")')
-	write (*, *) "<p>"
 	
 	ele (1, :) = (/ 1, 2 /)
 	X0 (:, 1) = (/ 0.0D1, 0.0D1, 0.0D1 /)
@@ -70,13 +69,10 @@ program example
 		rot (1, 1, i, i) = 1
 	end do
 	
-	call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck, .TRUE.)
+	call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck, .FALSE.)
 	
-	!print *, U (:, 2)
-	!print *, rot (1, 1, :, :)
-
-	write (*, *) "</p>"
-	write (*, '(1X, "<p>Success! The result is given below:</p>", E12.4)') 1.0
+	write (*, '(1X, "<p>Success! The length is given below:</p>", E12.4)') length
+	write (*, '(1X, "<p>Success! The no of elements is given below:</p>", E12.4)') nel
 	write (*, '(1X,"</html></body>")')
 	
 end program example
