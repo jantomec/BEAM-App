@@ -225,11 +225,7 @@ subroutine htmlplot (x, y, n)
 
 	do i = 1, n
 		u (i) = (x (i) - minx) / d * 400
-		v (i) = (y (i) - miny) / d * 400
-	end do
-
-	do i = 1, n
-		write (*,'(f5.1, ", ", f5.1)') u (i), v (i)
+		v (i) = 400 - (y (i) - miny) / d * 400
 	end do
 
 	! Create canvas
@@ -239,10 +235,10 @@ subroutine htmlplot (x, y, n)
 	write (*,*) '<script>'
 	write (*,*) 'var canvas = document.getElementById("myCanvas");'
 	write (*,*) 'var ctx = canvas.getcontext("2d");'
-	write (*,*) 'ctx.fillStyle = "green"';
+	write (*,*) 'ctx.fillStyle = "green";'
 	do i = 1, n
 		write (*,*) 'ctx.beginPath();'
-		write (*,'("ctx.arc(", f5.1, ", ", f5.1, ", 2, 0, 2 * Math.PI, false);")') u (i), v (i)
+		write (*,'("ctx.arc(", f5.1, ", ", f5.1, ", 3, 0, 2 * Math.PI);")') u (i), v (i)
 		write (*,*) 'ctx.fill();'
 	end do
 	write (*,*) '</script>'
