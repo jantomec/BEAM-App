@@ -126,9 +126,12 @@ subroutine htmlmatrix (A, ndim, n)
 	
 	double precision, dimension (ndim,n), intent(in) 	:: A
 	integer 											:: i, ndim, n
+	character (len = 80)								:: arrayfmt
+	
+	write (arrayfmt, '(A, i5, A)') '("<p>", ', ndim, 'f5.1, "</p>")'
 	
 	do i = 1, size(A (1, :))
-		write (*, '("<p>", ndimf5.1, "</p>")') A (:, i)
+		write (*, arrayfmt) A (:, i)
 	end do
 		
 end subroutine htmlmatrix
