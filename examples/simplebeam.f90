@@ -25,7 +25,7 @@ program example
 	integer, parameter							:: MAXITER = 20
 	double precision, parameter					:: TOLER = 1D-5
 	integer										:: i, j, Niter, info
-	character (len=5), dimension (ndim)			:: labels
+	character (len=5), dimension (3)			:: labels
 	
 	! Determine the length of the data string
     ! that is to be read in the next section.
