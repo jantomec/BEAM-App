@@ -209,7 +209,8 @@ subroutine htmlplot (x, y, n)
 	implicit none
 
 	integer												:: n, i
-	double precision, dimension (n), intent(in) 		:: x, y, u, v
+	double precision, dimension (n), intent(in) 		:: x, y
+	double precision, dimension (n)						:: u, v
 	double precision									:: minx, miny, maxx, maxy, dx, dy, d
 
 	! Compute points locations
