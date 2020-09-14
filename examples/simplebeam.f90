@@ -228,9 +228,7 @@ subroutine htmlplot (x, y, n)
 	d = max (dx, dy)
 	d = 1.2 * d
 
-	write (*,*) 'ok1'
 	do i = 1, n
-		write (*,*) i
 		u (i) = (x (i) - minx) / d * w + 0.1*w
 		v (i) = h - (y (i) - miny) / d * h - 0.1*h
 	end do
@@ -238,6 +236,8 @@ subroutine htmlplot (x, y, n)
 
 	! Create canvas
 	
+	write (*,*) u
+	write (*,*) '<table style="width:33%">'
 	write (*,*) '<canvas id="myCanvas"'
 	write (*, '(A, I3, A, I3, A)') 'width="', w, '" height="', h, '" style="border:1px solid #000000;">'
 	write (*,*) '</canvas>'
