@@ -9,7 +9,7 @@ program example
 	character (len=100)							:: LineIn = ''
 	character (len=10)							:: string = ''
 	integer										:: lenLineIn, startValue, endValue
-	double precision							:: length, nel_d
+	double precision							:: length, moment, nel_d
 	
 	integer										:: Nele, Nno, order, Ngauss
 	type (ElementMesh) 							:: mesh
@@ -44,6 +44,11 @@ program example
 	startValue = index (LineIn, 'length=') + 7
 	endValue = startValue + index(LineIn(startValue:), '&') - 2
 	read (LineIn(startValue:endValue), *) length
+
+	! Locate and read the value of 'moment' from LineIn (name in html form)
+	startValue = index (LineIn, 'moment=') + 7
+	endValue = startValue + index(LineIn(startValue:), '&') - 2
+	read (LineIn(startValue:endValue), *) moment
 	
 	! Locate and read the value of 'nel' from LineIn
 	startValue = index(LineIn,'nel=') + 4
@@ -105,7 +110,7 @@ program example
 	! FORCE CONTROL ROUTINE
 	do j = 0, 10
 		if (j > 0) then
-			Q (5, Nno) = Q (5, Nno) + 3.14 / 10
+			Q (5, Nno) = Q (5, Nno) + moment / 10
 			call newton_iter (mesh%ele, mesh%X0, U, C, DOF, dU, Q, p, rot, om, f, R, TOLER, MAXITER, 'RSD', Niter, info, .FALSE.)
 		end if
 		
