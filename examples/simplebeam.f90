@@ -234,11 +234,11 @@ subroutine htmlplot (x, y, n)
 	! Draw points
 	write (*,*) '<script>'
 	write (*,*) 'var canvas = document.getElementById("myCanvas");'
-	write (*,*) 'var ctx = canvas.getcontext("2d");'
+	write (*,*) 'var ctx = canvas.getContext("2d");'
 	write (*,*) 'ctx.fillStyle = "green";'
 	do i = 1, n
 		write (*,*) 'ctx.beginPath();'
-		write (*,'("ctx.arc(", f5.1, ", ", f5.1, ", 3, 0, 2 * Math.PI);")') u (i), v (i)
+		write (*,'("ctx.arc(", f5.1, ", ", f5.1, ", 4, 0, 2 * Math.PI);")') u (i), v (i)
 		write (*,*) 'ctx.fill();'
 	end do
 	write (*,*) '</script>'
