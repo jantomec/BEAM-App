@@ -237,9 +237,8 @@ subroutine htmlplot (x, y, n)
 	! Create canvas
 	
 	write (*,*) u
-	write (*,*) '<table style="width:33%">'
 	write (*,*) '<canvas id="myCanvas"'
-	write (*, '(A, I3, A, I3, A)') 'width="', w, '" height="', h, '" style="border:1px solid #000000;">'
+	write (*, '(A, I3, A, I3, A)') 'width="', 400, '" height="', 400, '" style="border:1px solid #000000;">'
 	write (*,*) '</canvas>'
 
 	! Draw points
