@@ -128,7 +128,7 @@ subroutine htmlmatrix (A, ndim, n)
 	double precision, dimension (ndim,n), intent(in) 	:: A
 	integer 											:: i, j, ndim, n
 	character (len = 140)								:: arrayfmt
-	character (len = 10)								:: numfmt
+	character (len = 30)								:: numfmt
 	
 	write (*, *) '<p>Success2!</p>'
 	write (*,*) 'juheeej!!'
@@ -137,7 +137,7 @@ subroutine htmlmatrix (A, ndim, n)
 		arrayfmt = '<tr>'
 		do j = 1, ndim	
 			write (numfmt,'("<th>", f10.3, "</th>")') A (:, i)
-			arrayfmt = arrayfmt//numfmt
+			arrayfmt = trim (arrayfmt) // trim (numfmt)
 		end do
 		arrayfmt = arrayfmt//'</tr>'
 		write (*,*) arrayfmt
