@@ -132,7 +132,7 @@ program example
 	call htmlmatrix (X, labels, 3, Nno)
 	write (*, *) '</body></html>'
 
-	call htmlplot ()
+	call htmlplot (X (1,:), X (3,:), Nno)
 	
 end program example
 
