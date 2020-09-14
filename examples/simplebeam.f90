@@ -72,7 +72,7 @@ program example
 	call newton_iter (ele, X0, U, C, DOF, dU, Q, p, rot, om, f, res, TOLER, MAXITER, 'RSD', Niter, errck, .FALSE.)
 	
 	write (*, '(1X, "<p>Success! The length is given below:</p>", E12.4)') length
-	write (*, '(1X, "<p>Success! The no of elements is given below:</p>", E12.4)') nel
+	write (*, '(1X, "<p>Success! The no of elements is given below:</p>", E12.4)') nel_d
 	write (*, '(1X,"</html></body>")')
 	
 end program example
