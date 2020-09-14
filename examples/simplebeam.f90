@@ -19,11 +19,11 @@ program example
 	double precision, allocatable				:: dU (:,:), Q (:,:)
 	double precision, allocatable				:: p (:,:,:), f (:,:,:)
 	double precision, allocatable				:: om (:,:,:)
-	double precision, allocatable				:: rot (:,:,:)
+	double precision, allocatable				:: rot (:,:,:,:)
 	double precision, allocatable				:: R (:,:)
 	integer, parameter							:: MAXITER = 20
 	double precision, parameter					:: TOLER = 1D-5
-	integer										:: i, Niter, errck
+	integer										:: i, j, Niter, info
 	
 	! Determine the length of the data string
     ! that is to be read in the next section.
@@ -123,8 +123,8 @@ subroutine htmlmatrix (A)
 		
 	implicit none
 	
-	double precision, dimension (:,:) 	:: A
-	integer 							:: i, ndim, n
+	double precision, dimension (:,:), intent(in) 	:: A
+	integer 										:: i, ndim, n
 	
 	ndim = size (A)
 	n = size (A (1,:))
