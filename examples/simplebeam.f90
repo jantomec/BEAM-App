@@ -200,4 +200,4 @@ subroutine htmlinput (names, data, n)
 	end do	
 	write (*,*) '</table>'
 	
-end subroutine htmlmatrix
+end subroutine htmlinput
