@@ -62,7 +62,7 @@ program example
 	mesh%Nno = Nno
 	mesh%Nele = Nele
 	mesh%order = 1
-	call lmsh (1.0, mesh)
+	call lmsh (1.0D1, mesh)
 	do i = 1, Nele
 		do j = 1, Ngauss
 			rot (i, j, 1, :)= (/ 1.0D1, 0.0D1, 0.0D1 /)
