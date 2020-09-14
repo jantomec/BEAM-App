@@ -51,7 +51,7 @@ program example
 	write (*, '("Content-type: text/html",//)')
 	
 	! Begin with html
-	write (*, '(1X,"<html><body>")')
+	write (*, '(1X, A)') '<html><body>'
 	
 	! =================================================
 	! MESH
@@ -116,7 +116,7 @@ program example
 	
 	write (*, '(1X, A)') '<p>Success!</p>'
 	!call htmlmatrix (X, 3, Nno)
-	write (*, '(1X,"</html></body>")')
+	write (*, '(1X, A)') '</body></html>'
 	
 end program example
 
