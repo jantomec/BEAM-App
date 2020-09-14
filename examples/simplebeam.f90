@@ -222,10 +222,11 @@ subroutine htmlplot (x, y, n)
 	dy = maxy - miny
 
 	d = max (dx, dy)
+	d = 1.2 * d
 
 	do i = 1, n
-		u (i) = (x (i) - minx) / d * 400
-		v (i) = 400 - (y (i) - miny) / d * 400
+		u (i) = (x (i) - minx) / d * 400 + 0.1*d
+		v (i) = 400 - (y (i) - miny) / d * 400 - 0.1*d
 	end do
 
 	! Create canvas
