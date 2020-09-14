@@ -211,7 +211,11 @@ subroutine htmlplot (x, y, n)
 	integer												:: n, i
 	double precision, dimension (n), intent(in) 		:: x, y
 	double precision, dimension (n)						:: u, v
-	double precision									:: minx, miny, maxx, maxy, dx, dy, d
+	double precision									:: minx, miny, maxx, maxy, dx, dy, d, w, h
+
+	! Set plot pixel width and height
+	w = 400
+	h = 400
 
 	! Compute points locations
 	minx = minval (x)
@@ -225,12 +229,13 @@ subroutine htmlplot (x, y, n)
 	d = 1.2 * d
 
 	do i = 1, n
-		u (i) = (x (i) - minx) / d * 400 + 0.05*d
-		v (i) = 400 - (y (i) - miny) / d * 400 - 0.05*d
+		u (i) = (x (i) - minx) / d * w + 0.1*w
+		v (i) = h - (y (i) - miny) / d * h - 0.1*h
 	end do
 
+
 	! Create canvas
-	write (*,*) '<canvas id="myCanvas" width="400" height="400" style="border:1px solid #000000;"></canvas>'
+	write (*, '(A, I3, A, I3, A)') '<canvas id="myCanvas" width="' w '" height="' h, '" style="border:1px solid #000000;"></canvas>'
 
 	! Draw points
 	write (*,*) '<script>'
@@ -241,6 +246,10 @@ subroutine htmlplot (x, y, n)
 		write (*,*) 'ctx.beginPath();'
 		write (*,'("ctx.arc(", f5.1, ", ", f5.1, ", 4, 0, 2 * Math.PI);")') u (i), v (i)
 		write (*,*) 'ctx.fill();'
+		if (i.lt.n) then
+			write (*, '("ctx.moveTo(", f5.1, ", ", f5.1, ");")') u (i), v (i)
+			write (*, '("ctx.lineTo(", f5.1, ", ", f5.1, ");")') u (i+1), v (i+1)
+		end if
 	end do
 	write (*,*) '</script>'
 
