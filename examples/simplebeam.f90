@@ -130,8 +130,6 @@ subroutine htmlmatrix (A, ndim, n)
 	character (len = 140)								:: arrayfmt
 	character (len = 30)								:: numfmt
 	
-	write (*, *) '<p>Success2!</p>'
-	write (*,*) 'juheeej!!'
 	write (*,*) '<table style="width:33%">'
 	do i = 1, n
 		arrayfmt = '<tr>'
