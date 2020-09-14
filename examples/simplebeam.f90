@@ -228,7 +228,9 @@ subroutine htmlplot (x, y, n)
 	d = max (dx, dy)
 	d = 1.2 * d
 
+	write (*,*) 'ok1'
 	do i = 1, n
+		write (*,*) i
 		u (i) = (x (i) - minx) / d * w + 0.1*w
 		v (i) = h - (y (i) - miny) / d * h - 0.1*h
 	end do
