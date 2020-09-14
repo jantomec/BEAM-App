@@ -55,7 +55,7 @@ program example
 	
 	! =================================================
 	! MESH
-	Nele = int (nel_d)
+	Nele = 10!int (nel_d)
 	order = 1
 	Ngauss = order
 	Nno = Nele * order + 1
