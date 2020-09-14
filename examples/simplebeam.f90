@@ -21,11 +21,13 @@ program example
 	double precision, allocatable				:: om (:,:,:)
 	double precision, allocatable				:: rot (:,:,:,:)
 	double precision, allocatable				:: R (:,:)
-	double precision, dimension (6), parameter	:: material = (/ 1.0D1, 1.0D1, 1.0D1, 1.0D1, 2.0D1, 1.0D1 /)
+	double precision, dimension (6), parameter	:: material = (/ 1.0D0, 1.0D0, 1.0D0, 1.0D0, 2.0D0, 1.0D0 /)
 	integer, parameter							:: MAXITER = 20
 	double precision, parameter					:: TOLER = 1D-5
 	integer										:: i, j, Niter, info
 	character (len=5), dimension (3)			:: labels
+	character (len=10), dimension (2)			:: input_labels
+	double precision, dimension (2)				:: input_data
 	
 	! Determine the length of the data string
     ! that is to be read in the next section.
@@ -117,6 +119,13 @@ program example
 	! HTML OUTPUT
 	
 	write (*, *) '<p>Success!</p>'
+
+	input_labels (1) = 'Length'
+	input_data (1) = length
+	input_labels (2) = 'No elem'
+	input_data (2) = Nele
+	call htmlinput (input_labels, input_data, 2)
+	
 	labels (1) = 'x'
 	labels (2) = 'y'
 	labels (3) = 'z'
@@ -136,7 +145,6 @@ subroutine htmlmatrix (A, b, ndim, n)
 	character (len = 30)								:: numfmt
 	
 	write (*,*) '<table style="width:33%">'
-	write (*,*) '<tr><th>i</th><th>x</th><th>y</th><th>z</th></tr>'
 	do i = 0, n
 		if (i.eq.0) then
 			write (arrayfmt, '("<tr><th>", A, "</th>")') 'i'
@@ -150,6 +158,40 @@ subroutine htmlmatrix (A, b, ndim, n)
 			write (arrayfmt, '("<tr><th>", i3, "</th>")') i
 			do j = 1, ndim	
 				write (numfmt,'("<th>", f10.3, "</th>")') A (j, i)
+				arrayfmt = trim (arrayfmt) // trim (numfmt)
+			end do
+			arrayfmt = arrayfmt//'</tr>'
+			write (*,*) arrayfmt
+		end if
+	end do	
+	write (*,*) '</table>'
+	
+end subroutine htmlmatrix
+
+subroutine htmlinput (names, data, n)
+		
+	implicit none
+	
+	double precision, dimension (n), intent(in) 		:: data
+	character (len=10), dimension (n), intent(in)		:: names
+	integer 											:: i, j, ndim, n
+	character (len = 140)								:: arrayfmt
+	character (len = 30)								:: numfmt
+
+	write (*,*) '<table style="width:33%">'
+	do i = 0,1
+		if (i.eq.0) then
+			write (arrayfmt, '("<tr>")')
+			do j = 1, n
+				write (numfmt,'("<th>", A, "</th>")') names (j)
+				arrayfmt = trim (arrayfmt) // trim (numfmt)
+			end do
+			arrayfmt = arrayfmt//'</tr>'
+			write (*,*) arrayfmt
+		else
+			write (arrayfmt, '("<tr>")')
+			do j = 1, n
+				write (numfmt,'("<th>", f10.3, "</th>")') data (j)
 				arrayfmt = trim (arrayfmt) // trim (numfmt)
 			end do
 			arrayfmt = arrayfmt//'</tr>'
