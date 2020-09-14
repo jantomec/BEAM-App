@@ -100,7 +100,7 @@ program example
 	! FORCE CONTROL ROUTINE
 	do j = 0, 10
 		if (j > 0) then
-			Q (5, Nno) = Q (5, Nno) + Q0 / nsteps (1)
+			Q (5, Nno) = Q (5, Nno) + 25 / 10
 			call newton_iter (mesh%ele, mesh%X0, U, C, DOF, dU, Q, p, rot, om, f, R, TOLER, MAXITER, 'RSD', Niter, info, .FALSE.)
 		end if
 		
@@ -119,16 +119,13 @@ program example
 	
 end program example
 
-subroutine htmlmatrix (A)
+subroutine htmlmatrix (A, ndim, n)
 		
 	implicit none
 	
-	double precision, dimension (:,:), intent(in) 	:: A
-	integer 										:: i, ndim, n
-	
-	ndim = size (A)
-	n = size (A (1,:))
-	
+	double precision, dimension (ndim,n), intent(in) 	:: A
+	integer 											:: i, ndim, n
+		
 	write (*,'("<p>")')
 	
 	do i = 1, size(A (1, :))
