@@ -10,11 +10,11 @@ program cantilever
 	integer, parameter :: order = 1
 	integer, parameter :: Ngauss = 1
 	integer, dimension (1), parameter :: Nsteps = (/ 1 /)
-	double precision, parameter :: L = 1.0D1
-	double precision, parameter :: PI = 4 * atan (1.0D1), Q0 = 8 * PI
-	integer, parameter :: MAXITER = 50
+	double precision, parameter :: L = 1.0D0
+	double precision, parameter :: PI = 4 * atan (1.0D0), Q0 = 8 * PI
+	integer, parameter :: MAXITER = 20
 	double precision, parameter :: TOLER = 1D-10
-	double precision, dimension (6), parameter :: material = (/ 1.0D1, 1.0D1, 1.0D1, 1.0D1, 2.0D1, 1.0D1 /)
+	double precision, dimension (6), parameter :: material = (/ 1.0D0, 1.0D0, 1.0D0, 1.0D0, 2.0D0, 1.0D0 /)
 	character (len = *), parameter :: folder = 'cantilever'
 	character (len = *), parameter :: fname_format = '("step", I0.3, ".dat")'
 	
@@ -45,25 +45,25 @@ program cantilever
 	call lmsh (L, mesh)
 	do i = 1, Nele
 		do j = 1, Ngauss
-			rot (i, j, 1, :)= (/ 1.0D1, 0.0D1, 0.0D1 /)
-			rot (i, j, 2, :)= (/ 0.0D1, 1.0D1, 0.0D1 /)
-			rot (i, j, 3, :)= (/ 0.0D1, 0.0D1, 1.0D1 /)
+			rot (i, j, 1, :)= (/ 1.0D0, 0.0D0, 0.0D0 /)
+			rot (i, j, 2, :)= (/ 0.0D0, 1.0D0, 0.0D0 /)
+			rot (i, j, 3, :)= (/ 0.0D0, 0.0D0, 1.0D0 /)
 		end do
 	end do
 	
 	! =================================================
 	! ELASTIC MODULI MATRIX
-	C = 0.0D1  ! add material
+	C = 0.0D0  ! add material
 	do i = 1, 6
 		C (i, i) = material (i)
 	end do
 	
 	! =================================================
 	! DATA INITIALIZATION
-	U = 0.0D1
-	p = 0.0D1
-	f = 0.0D1
-	om = 0.0D1
+	U = 0.0D0
+	p = 0.0D0
+	f = 0.0D0
+	om = 0.0D0
 	
 	st = getcwd (wdir_long)
 	wdir = trim (wdir_long)
@@ -78,8 +78,8 @@ program cantilever
 	! BOUNDARY CONDITIONS
 	DOF = .TRUE.
 	DOF (:, 1) = .FALSE.
-	dU = 0.0D1
-	Q = 0.0D1
+	dU = 0.0D0
+	Q = 0.0D0
 	
 	! =================================================
 	! FORCE CONTROL ROUTINE
