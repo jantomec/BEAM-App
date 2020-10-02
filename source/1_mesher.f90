@@ -31,7 +31,7 @@ module mesher
 	
 	private
 	
-	double precision, parameter :: PI = 4 * atan (1.0)
+	double precision, parameter :: PI = 4 * atan (1.0D0)
 	
 	public :: lmsh, ramsh, arcmsh
 	
@@ -53,7 +53,7 @@ module mesher
 		
 		allocate (mesh%X0 (3, mesh%Nno), mesh%ele (mesh%Nele, mesh%order + 1))
 		
-		mesh%X0 = 0.0
+		mesh%X0 = 0.0D0
 		dx = L / (mesh%Nno - 1)
 		mesh%X0 (3, :) = (/ (j * dx, j = 0, mesh%Nno - 1) /)
 		
@@ -79,14 +79,14 @@ module mesher
 		
 		allocate (mesh%X0 (3, mesh%Nno), mesh%ele (mesh%Nele, mesh%order + 1))
 		
-		mesh%X0 = 0.0
+		mesh%X0 = 0.0D0
 		dx = 2 * L / (mesh%Nno - 1)
 		do j = 0, mesh%Nno - 1
-			mesh%X0 (3, j + 1) = j * dx / dsqrt (2.0D1)
+			mesh%X0 (3, j + 1) = j * dx / dsqrt (2.0D0)
 			if (j > mesh%Nno / 2) then
-				mesh%X0 (1, j + 1) = L / dsqrt (2.0D1) - (j - mesh%Nno / 2) * dx / dsqrt (2.0D1)
+				mesh%X0 (1, j + 1) = L / dsqrt (2.0D0) - (j - mesh%Nno / 2) * dx / dsqrt (2.0D0)
 			else
-				mesh%X0 (1, j + 1) = j * dx / dsqrt (2.0D1)
+				mesh%X0 (1, j + 1) = j * dx / dsqrt (2.0D0)
 			end if
 		end do
 		do i = 1, mesh%order + 1
@@ -115,7 +115,7 @@ module mesher
 		
 		allocate (mesh%X0 (3, mesh%Nno), mesh%ele (mesh%Nele, mesh%order + 1))
 		
-		mesh%X0 = 0.0
+		mesh%X0 = 0.0D0
 		dphi = (phi_f - phi_i) / (mesh%Nno - 1)
 		do i = 1, mesh%Nno
 			mesh%X0 (3, i) = R * cos (phi_i + (i - 1) * dphi)
@@ -131,8 +131,8 @@ module mesher
 			phi1 = phi_i + (e (1) - 1) * dphi
 			phi2 = phi_i + (e (mesh%order + 1) - 1) * dphi
 			do j = 1, size (gpts)
-				phig = ((gpts (j) + 1.0) / 2.0 * (phi2 - phi1) + phi1) + PI / 2
-				rotvec = (/ 0.0D1, phig, 0.0D1 /)
+				phig = ((gpts (j) + 1.0D0) / 2.0D0 * (phi2 - phi1) + phi1) + PI / 2
+				rotvec = (/ 0.0D0, phig, 0.0D0 /)
 				rot (i, j, :, :) = rv2mat (rotvec)
 			end do
 		end do

@@ -62,7 +62,7 @@ module beam
 		double precision, dimension (3, 3), intent (in) :: rot
 		double precision, dimension (6, 6) :: Pi
 		
-		Pi = 0.0
+		Pi = 0.0D0
 		Pi (1:3, 1:3) = rot
 		Pi (4:6, 4:6) = rot
 		
@@ -80,7 +80,7 @@ module beam
 		integer :: i
 		
 		S = skew (dX)
-		Xi = 0.0
+		Xi = 0.0D0
 		do i = 1, 6
 			Xi (i, i) = dN
 		end do
@@ -116,11 +116,11 @@ module beam
 		L = element_length (X0, g_ord) 
 		call legauss (g_ord, pts, wgts)
 		N = shfun (e_ord, pts)
-		dN = 2.0 / L * shdfun (e_ord, pts)
+		dN = 2.0D0 / L * shdfun (e_ord, pts)
 		
 		dX = matmul (X, dN)
 
-		Finte = 0.0
+		Finte = 0.0D0
 		
 		do g = 1, g_ord
 			do i = 1, nno
@@ -129,7 +129,7 @@ module beam
 			end do
 		end do
 		
-		Finte = L / 2.0 * Finte
+		Finte = L / 2.0D0 * Finte
 	
 	end function Finte
 	
@@ -155,10 +155,10 @@ module beam
 		call legauss (g_ord, pts, wgts)
 		N = shfun (e_ord, pts)
 		
-		Fexte = 0.0
+		Fexte = 0.0D0
 		
 		do g = 1, g_ord
-			H = 0.0
+			H = 0.0D0
 			do i = 1, nno
 				H (1, 1) = N (i, g)
 				H (2, 2) = N (i, g)
@@ -170,7 +170,7 @@ module beam
 			end do
 		end do
 		
-		Fexte = L / 2.0 * Fexte
+		Fexte = L / 2.0D0 * Fexte
 				
 	end function Fexte
 	
@@ -192,7 +192,7 @@ module beam
 		double precision, dimension (size (om (1, :))) :: tn
 		double precision, dimension (3, 3) :: R, rotinv
 		double precision, dimension (3) ::  b1, b2, b3, a1, a2, a3, Gamma, kappa, fn, fm
-		double precision, dimension (3), parameter :: E3 = (/ 0.0, 0.0, 1.0 /)
+		double precision, dimension (3), parameter :: E3 = (/ 0.0D0, 0.0D0, 1.0D0 /)
 		
 		g_ord = size (om (1, :))
 		nno = size (X0 (1, :))
@@ -201,7 +201,7 @@ module beam
 		L = element_length (X0, g_ord)
 		call legauss (g_ord, pts, wgts)
 		N = shfun (e_ord, pts)
-		dN = 2.0 / L * shdfun (e_ord, pts)
+		dN = 2.0D0 / L * shdfun (e_ord, pts)
 		
 		dX = matmul (X, dN)
 		t = matmul (th, N)
@@ -214,13 +214,13 @@ module beam
 			if (tn (g) == 0) then
 				om (:, g) = om (:, g) + dt (:, g)
 			else
-				b1 = (1.0 - sin (tn (g)) / tn (g)) &
+				b1 = (1.0D0 - sin (tn (g)) / tn (g)) &
 				   * dot_product (t (:, g), dt (:, g)) / tn (g) ** 2 * t (:, g)
 				b2 = sin (tn (g)) / tn (g) * dt (:, g)
-				b3 = (1.0 - cos (tn (g))) / tn (g) ** 2 &
+				b3 = (1.0D0 - cos (tn (g))) / tn (g) ** 2 &
 				   * cross_product (t (:, g), dt (:, g))
 				a1 = cos (tn (g)) * om (:, g)
-				a2 = (1.0 - cos (tn (g))) / tn (g) ** 2 &
+				a2 = (1.0D0 - cos (tn (g))) / tn (g) ** 2 &
 				   * dot_product (t (:, g), om (:, g)) * t (:, g)
 				a3 = sin (tn (g)) / tn (g) * cross_product (t (:, g), om (:, g))
 				om (:, g) = b1 + b2 + b3 + a1 + a2 + a3
@@ -262,11 +262,11 @@ module beam
 		L = element_length (X0, g_ord)
 		call legauss (g_ord, pts, wgts)
 		N = shfun (e_ord, pts)
-		dN = 2.0 / L * shdfun (e_ord, pts)
+		dN = 2.0D0 / L * shdfun (e_ord, pts)
 		
 		dX = matmul (X, dN)
 		
-		Ke = 0.0
+		Ke = 0.0D0
 		
 		do g = 1, g_ord
 			Pi_g = Pi (rot (g, :, :))
@@ -283,7 +283,7 @@ module beam
 			end do
 		end do
 		
-		Ke = L / 2.0 * Ke
+		Ke = L / 2.0D0 * Ke
 	
 	end function Ke
 	
@@ -309,11 +309,11 @@ module beam
 		L = element_length (X0, g_ord)
 		call legauss (g_ord, pts, wgts)
 		N = shfun (e_ord, pts)
-		dN = 2.0 / L * shdfun (e_ord, pts)
+		dN = 2.0D0 / L * shdfun (e_ord, pts)
 		
 		dX = matmul (X, dN)
 		
-		Kgeoe = 0.0
+		Kgeoe = 0.0D0
 		
 		do g = 1, g_ord
 			do i = 1, nno
@@ -337,7 +337,7 @@ module beam
 			end do
 		end do
 		
-		Kgeoe = L / 2.0 * Kgeoe
+		Kgeoe = L / 2.0D0 * Kgeoe
 	
 	end function Kgeoe
 	
@@ -359,7 +359,7 @@ module beam
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
 				
-		Kg = 0.0
+		Kg = 0.0D0
 		
 		do e = 1, nele
 			ee = ele (e, :)
@@ -395,7 +395,7 @@ module beam
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
 		
-		Fintg = 0.0
+		Fintg = 0.0D0
 		
 		do e = 1, nele
 			ee = ele (e, :)
@@ -427,7 +427,7 @@ module beam
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
 		
-		Fextg = 0.0
+		Fextg = 0.0D0
 		
 		do e = 1, nele
 			ee = ele (e, :)

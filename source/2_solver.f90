@@ -157,7 +157,7 @@ module solver
 			Niter = i + 1
 			
 			if (i > 0) then
-				res = 0.0
+				res = 0.0D0
 				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
 				
 				call pack2 (tangent, DOFsel, K2)
@@ -174,7 +174,7 @@ module solver
 					exit
 				end if	
 				
-				res2 = 0.0
+				res2 = 0.0D0
 				call logicwrite (R2 (:, 1), DOFsel, res2)
 				res = reshape (res2, (/ 6, nno /))
 				
@@ -266,7 +266,7 @@ module solver
 		integer, allocatable :: ipiv (:)
 		double precision :: convtest, tandet
 		
-		errck = 0.0
+		errck = 0.0D0
 		
 		nno = size (X0 (1, :))
 		
@@ -284,7 +284,7 @@ module solver
 			Niter = i + 1
 			
 			if (i > 0) then
-				res = 0.0
+				res = 0.0D0
 				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
 				
 				call pack2 (tangent, DOFsel, K2)
@@ -295,7 +295,7 @@ module solver
 					exit
 				end if	
 				
-				tandet = 1.0
+				tandet = 1.0D0
 				do j = 1, ndof  ! compute sign of determinant
 					tandet = K2 (j, j) / abs (K2 (j, j)) * tandet
 					if (j .ne. ipiv (j)) then
@@ -311,7 +311,7 @@ module solver
 					exit
 				end if	
 				
-				res2 = 0.0
+				res2 = 0.0D0
 				call logicwrite (R2 (:, 1), DOFsel, res2)
 				res = reshape (res2, (/ 6, nno /))
 				
@@ -360,7 +360,7 @@ module solver
 		if ( n == 1 ) then
 			accum = mat(1,1)
 		else
-			accum = 0.0
+			accum = 0.0D0
 			sgn = 1
 			do i = 1, n
 				submat( 1:n-1, 1:i-1 ) = mat( 2:n, 1:i-1 )
@@ -455,8 +455,8 @@ module solver
 			
 			Niter = i
 		
-			res2F = 0.0
-			res2R = 0.0
+			res2F = 0.0D0
+			res2R = 0.0D0
 			
 			tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
 			call pack2 (tangent, DOFsel, K2)
@@ -492,7 +492,7 @@ module solver
 			if (i .eq. 1) then
 				UincdotdUF = dot_product (Uinc, dUFflat)
 				dlambda = sign (dS / sqrt (a1), UincdotdUF)
-				Uinc = 0.0
+				Uinc = 0.0D0
 			else
 				a2 = 2 * dot_product(Uinc + dURflat, dUFflat)
 				a3 = dot_product (Uinc + dURflat, Uinc + dURflat) - dS ** 2

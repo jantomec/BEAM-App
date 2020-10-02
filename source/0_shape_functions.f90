@@ -32,12 +32,12 @@ module shape_functions
 		double precision, dimension (e_ord + 1, size (pts)) :: shfun
 		
 		if (e_ord == 1) then
-			shfun (1, :) = -0.5 * pts + 0.5
-			shfun (2, :) = 0.5 * pts + 0.5
+			shfun (1, :) = -0.5D0 * pts + 0.5D0
+			shfun (2, :) = 0.5D0 * pts + 0.5D0
 		else if (e_ord == 2) then
-			shfun (1, :) = 0.5 * pts ** 2 - 0.5 * pts
-			shfun (2, :) = -1.0 * pts ** 2 + 1.0
-			shfun (3, :) = 0.5 * pts ** 2 + 0.5 * pts
+			shfun (1, :) = 0.5D0 * pts ** 2 - 0.5D0 * pts
+			shfun (2, :) = -1.0D0 * pts ** 2 + 1.0D0
+			shfun (3, :) = 0.5D0 * pts ** 2 + 0.5D0 * pts
 		else
 			print *, 'Module: shape_functions, Function: shfun'
 			print *, 'Message: Unexpected element_order.'
@@ -56,12 +56,12 @@ module shape_functions
 		double precision, dimension (e_ord + 1, size (pts)) :: shdfun
 				
 		if (e_ord == 1) then
-			shdfun (1, :) = -0.5
-			shdfun (2, :) = 0.5
+			shdfun (1, :) = -0.5D0
+			shdfun (2, :) = 0.5D0
 		else if (e_ord == 2) then
-			shdfun (1, :) = pts - 0.5
-			shdfun (2, :) = -2.0 * pts
-			shdfun (3, :) = pts + 0.5
+			shdfun (1, :) = pts - 0.5D0
+			shdfun (2, :) = -2.0D0 * pts
+			shdfun (3, :) = pts + 0.5D0
 		else
 			print *, 'Module: shape_functions, Function: shdfun'
 			print *, 'Message: Unexpected element_order.'
