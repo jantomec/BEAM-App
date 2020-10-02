@@ -1,15 +1,16 @@
 ! Finite element solver
 !
-! author ....... Jan Tomec
-! copyright .... Copyright 2020, Project THREAD - University of Rijeka, Faculty of Civil Engineering
-! credits ...... Jan Tomec, Gordan Jelenić
-! license ...... GPL
-! version ...... 1.0.0
-! maintainer ... Jan Tomec
-! email ........ jan.tomec@gradri.uniri.hr
-! status ....... Development
-! date created.. 06/09/2020
-! date modified. 09/14/2020
+! author .............. Jan Tomec
+! copyright ........... Copyright 2020, Project THREAD - University of Rijeka, Faculty of Civil Engineering
+! credits ............. Jan Tomec, Gordan Jelenić
+! license ............. GPL
+! version ............. 1.0.0
+! maintainer .......... Jan Tomec
+! email ............... jan.tomec@gradri.uniri.hr
+! status .............. Development
+! date created ........ 06/09/2020
+! date modified (1) ... 14/09/2020
+! date modified (2) ... 02/10/2020
 !
 ! ------------------------------------------------------------------------------
 
@@ -101,7 +102,8 @@ module solver
 	!                    0 = no error
 	!                    2 = LU Factorization error (dgetrf)
 	!                    3 = Solver error (dgetrs)
-	!
+	! prints ....... boolean, indicating if intermediate info statements should be printed
+    !
 	! modify U, rot, om, f
 	subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errck, prints)
 	
@@ -123,18 +125,15 @@ module solver
 		character (len = 3), intent (in) :: TEST
 		integer, intent (out) :: Niter
 		integer, intent (out) :: errck
-		logical, intent (in) :: prints  ! if the statements should be printed
+		logical, intent (in) :: prints
 		
-		integer :: nno, ndof, i, j, info
-		logical, dimension (6 * size (X0 (1, :))) :: DOFsel
+		integer :: nno, ndof, i, j, k, info
 		double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
-		double precision, allocatable :: K2 (:, :)
+		double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth
+		double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R, resflat
 		double precision, dimension (6, size (X0 (1, :))) :: res
-		double precision, dimension (6 * size (X0 (1, :))) :: res2
-		double precision, allocatable :: R1 (:), R2 (:, :)
-		double precision, dimension (3, size (X0 (1, :))) :: X, dU, th
-		double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
-		integer, allocatable :: ipiv (:)
+		integer, dimension (6 * size (X0 (1, :))) :: ipiv
+		logical, dimension (6 * size (X0 (1, :))) :: DOFflat
 		double precision :: convtest
 		
 		external dgetrf, dgetrs
@@ -142,14 +141,11 @@ module solver
 		errck = 0
 		
 		nno = size (X0 (1, :))
-		
+		ndof = 6 * nno
+        
 		res = Uload
-		
-		DOFsel = pack (DOF, .TRUE.)
-		ndof = count (DOFsel)
-		allocate (K2 (ndof, ndof))
-		allocate (R1 (ndof), R2 (ndof, 1), ipiv (ndof))
-		
+		DOFflat = pack (DOF, .TRUE.)
+        
 		if (prints) call begin_table ('N')
 		
 		do i = 0, MAXITER-1
@@ -157,51 +153,53 @@ module solver
 			Niter = i + 1
 			
 			if (i > 0) then
-				res = 0.0D0
 				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
 				
-				call pack2 (tangent, DOFsel, K2)
-				
-				call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
+                do j = 1, ndof
+                    if (.NOT. DOFflat (j)) then
+                        tangent (:, j) = 0.0D0
+                        tangent (j, :) = 0.0D0
+                        tangent (j, j) = 1.0D0
+                    end if
+                end do
+                
+				call dgetrf (ndof, ndof, tangent, ndof, ipiv, info)  ! LU factorization
 				if (info .ne. 0) then
 					errck = 2
 					exit
-				end if	
-								
-				call dgetrs ('N', ndof, 1, K2, ndof, ipiv, R2, ndof, info)  ! solve system
+				end if
+                
+				call dgetrs ('N', ndof, 1, tangent, ndof, ipiv, R, ndof, info)  ! solve system
 				if (info .ne. 0) then
 					errck = 3
 					exit
-				end if	
-				
-				res2 = 0.0D0
-				call logicwrite (R2 (:, 1), DOFsel, res2)
-				res = reshape (res2, (/ 6, nno /))
-				
+				end if
+                
+                resflat = R
+                res = reshape (resflat, (/ 6, nno /))
 			end if
-			
-			do concurrent (j = 1:3)
-				dU (j, :) = res (j, :) 
-				th (j, :) = res (j + 3, :)
-			end do
-			
+            
+            dU = res (1:3, :)
+            dth = res (4:6, :)
+            
 			U = U + dU
 			X = X0 + U
+                        
+			call curv (ele, X0, X, dth, C, rot, om, f)
 			
-			call curv (ele, X0, X, th, C, rot, om, f)
-			
-			Fint = Fintg (ele, X0, X, f)
+            Fint = Fintg (ele, X0, X, f)
 			Fext = Fextg (ele, X0, Q, p)
-			R = Fint - Fext
-			R1 = pack (R, DOFsel)
-			
-			if (TEST .eq. 'RSD') convtest = norm2 (R1)
-			if (TEST .eq. 'DSP') convtest = norm2 (R2)
+			R = Fext - Fint
+            
+            do j = 1, ndof
+                if (.NOT. DOFflat (j)) R(j) = 0.0D0
+            end do
+            
+			if (TEST .eq. 'RSD') convtest = norm2 (R)
+			if (TEST .eq. 'DSP') convtest = norm2 (resflat)
 			
 			if (prints) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
 			if (convtest < TOLER) exit
-			
-			R2 (:, 1) = -R1  ! invert and verticalize residual
 						
 		end do
 		
@@ -261,7 +259,7 @@ module solver
 		double precision, dimension (6, size (X0 (1, :))) :: res
 		double precision, dimension (6 * size (X0 (1, :))) :: res2
 		double precision, allocatable :: R1 (:), R2 (:, :)
-		double precision, dimension (3, size (X0 (1, :))) :: X, dU, th
+		double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth
 		double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
 		integer, allocatable :: ipiv (:)
 		double precision :: convtest, tandet
@@ -319,13 +317,13 @@ module solver
 			
 			do concurrent (j = 1:3)
 				dU (j, :) = res (j, :) 
-				th (j, :) = res (j + 3, :)
+				dth (j, :) = res (j + 3, :)
 			end do
 			
 			U = U + dU
 			X = X0 + U
 			
-			call curv (ele, X0, X, th, C, rot, om, f)
+			call curv (ele, X0, X, dth, C, rot, om, f)
 			
 			Fint = Fintg (ele, X0, X, f)
 			Fext = Fextg (ele, X0, Q, p)
@@ -423,7 +421,7 @@ module solver
 		double precision, dimension (6 * size (X0 (1, :))) :: res2F, res2R
 		double precision, dimension (6, size (X0 (1, :))) :: resF, resR
 		double precision, allocatable :: R2 (:, :)
-		double precision, dimension (3, size (X0 (1, :))) :: X, dU, th, U0, dUF, dUR, thF, thR
+		double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth, U0, dUF, dUR, thF, thR
 		double precision, dimension (3 * size (X0 (1, :))) :: dUFflat, dURflat
 		double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, FC, R
 		integer, allocatable :: ipiv (:)
@@ -522,8 +520,8 @@ module solver
 			Uinc = Uinc + dURflat + dlambda * dUFflat
 			U = U + dUR + dlambda * dUF
 			X = X0 + U
-			th = thR + dlambda * thF
-			call curv (ele, X0, X, th, C, rot, om, f)
+			dth = thR + dlambda * thF
+			call curv (ele, X0, X, dth, C, rot, om, f)
 			Fint = Fintg (ele, X0, X, f)
 			R = Fint - lambda * Fext - FC
 			R2 (:, 1) = pack (Fext, DOFsel)
