@@ -252,13 +252,16 @@ subroutine htmlplot (x, y, n)
 	write (*,*) 'ctx.fillStyle = "green";'
 	do i = 1, n
 		write (*,*) 'ctx.beginPath();'
-		write (*,'("ctx.arc(", f5.1, ", ", f5.1, ", 4, 0, 2 * Math.PI);")') u (i), v (i)
-		write (*,*) 'ctx.fill();'
 		if (i.lt.n) then
 			write (*, '("ctx.moveTo(", f5.1, ", ", f5.1, ");")') u (i), v (i)
 			write (*, '("ctx.lineTo(", f5.1, ", ", f5.1, ");")') u (i+1), v (i+1)
 			write (*,*) 'ctx.stroke();'
 		end if
+	end do
+    do i = 1, n
+		write (*,*) 'ctx.beginPath();'
+		write (*,'("ctx.arc(", f5.1, ", ", f5.1, ", 4, 0, 2 * Math.PI);")') u (i), v (i)
+		write (*,*) 'ctx.fill();'
 	end do
 	write (*,*) '</script>'
 
