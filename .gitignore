@@ -6,3 +6,4 @@
 *.dat
 lib
 .DS_Store
+update.sh
