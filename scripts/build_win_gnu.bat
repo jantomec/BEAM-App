@@ -1,4 +1,7 @@
 @echo off
+
+echo.
+
 IF %1.==. GOTO No1
 
 setlocal enabledelayedexpansion enableextensions
@@ -13,7 +16,11 @@ set LIST2=%LIST2:~1%
 
 gfortran -Ilib -Ilapack/lib %1 !LIST2! !LIST1! -o %~n1.exe
 
-::gfortran -Ilib -Ilapack/lib %1 lib/0_mesher.o lib/solver.o lib/beam.o lib/shape_functions.o lib/legendre_gauss.o lib/vector_algebra.o
+echo.
+echo.
+echo Finished building program %~n1.exe.
+echo.
+
 GOTO End1
 
 :No1

@@ -32,12 +32,12 @@ module beam
 		implicit none
 		
 		integer, intent (in) :: g_ord
-		double precision, dimension (:, :), intent (in) :: X0
+		double precision, dimension (:, :), intent (in) :: X0  ! (3, no nodes on ele)
 		double precision :: element_length
 		integer :: e_ord, i
 		double precision, dimension (g_ord) :: pts, wgts
-		double precision, dimension (size (X0 (1, :)), g_ord) :: dN
-		double precision, dimension (3, g_ord) :: dX0
+		double precision, dimension (size (X0 (1, :)), g_ord) :: dN  ! (no nodes on ele, no gauss)
+		double precision, dimension (3, g_ord) :: dX0  ! (3, no gauss)
 		double precision, dimension (3) :: intg
 		
 		e_ord = size (X0 (1, :)) - 1
@@ -73,7 +73,7 @@ module beam
 	
 		implicit none
 		
-		double precision, dimension (:), intent (in) :: dX
+		double precision, dimension (3), intent (in) :: dX
 		double precision, intent (in) :: N, dN
 		double precision, dimension (6, 6) :: Xi_matrix
 		double precision, dimension (3, 3) :: S
@@ -94,22 +94,22 @@ module beam
 	end function Xi_matrix
 	
 	! compute elemental internal forces in nodes
-	function internal_forces (X0, X, f)
+	function internal_forces (X0, X, stress)
 		
 		implicit none
 		
-		double precision, dimension (:, :), intent (in) :: X0, X
-		double precision, dimension (:, :), intent (in) :: f
-		double precision, dimension (6, size (X0(1,:))) :: internal_forces
+		double precision, dimension (:, :), intent (in) :: X0, X  ! (3, no nodes on ele)
+		double precision, dimension (:, :), intent (in) :: stress  ! (6, no gauss)
+		double precision, dimension (6, size (X0(1,:))) :: internal_forces  ! (6, no nodes on ele)
 		integer :: g_ord, nno, e_ord, g, i
 		double precision :: L
-		double precision, dimension (size (f (1, :))) :: pts, wgts
-		double precision, dimension (size (X (1, :)), size (f (1, :))) :: N, dN
-		double precision, dimension (3, size (f (1, :))) :: dX
+		double precision, dimension (size (stress (1, :))) :: pts, wgts  ! (no gauss)
+		double precision, dimension (size (X (1, :)), size (stress (1, :))) :: N, dN  ! (no nodes on ele, no gauss)
+		double precision, dimension (3, size (stress (1, :))) :: dX  ! (3, no gauss)
 		double precision, dimension (3, 3) :: S
 		double precision, dimension (6, 6) :: Xi_i
 		
-		g_ord = size (f (1, :))
+		g_ord = size (stress (1, :))
 		nno = size (X (1, :))
 		e_ord = nno - 1
 		
@@ -125,7 +125,7 @@ module beam
 		do g = 1, g_ord
 			do i = 1, nno
 				Xi_i = Xi_matrix (dX (:, g), N (i, g), dN (i, g))
-				internal_forces (:, i) = internal_forces (:, i) + matmul (Xi_i, f (:, g)) * wgts (g)
+				internal_forces (:, i) = internal_forces (:, i) + matmul (Xi_i, stress (:, g)) * wgts (g)
 			end do
 		end do
 		
@@ -134,20 +134,20 @@ module beam
 	end function internal_forces
 	
 	! compute elemental external forces in nodes
-	function external_forces (X0, p)
+	function external_forces (X0, pressure)
 		
 		implicit none
 		
-		double precision, dimension (:, :), intent (in) :: X0
-		double precision, dimension (:, :), intent (in) :: p
-		double precision, dimension (6, size (X0 (1,:))) :: external_forces
+		double precision, dimension (:, :), intent (in) :: X0  ! (3, no nodes on ele)
+		double precision, dimension (:, :), intent (in) :: pressure  ! (6, no gauss)
+		double precision, dimension (6, size (X0 (1,:))) :: external_forces  ! (6, no nodes on ele)
 		integer :: g_ord, nno, e_ord, g, i
 		double precision :: L
-		double precision, dimension (size (p (1, :))) :: pts, wgts
-		double precision, dimension (size (X0 (1, :)), size (p (1, :))) :: N
+		double precision, dimension (size (pressure (1, :))) :: pts, wgts  ! (no gauss)
+		double precision, dimension (size (X0 (1, :)), size (pressure (1, :))) :: N  ! (no nodes onele, no gauss)
 		double precision, dimension (6, 6) :: H
 		
-		g_ord = size (p (1, :))
+		g_ord = size (pressure (1, :))
 		nno = size (X0 (1, :))
 		e_ord = nno - 1
 		
@@ -166,7 +166,7 @@ module beam
 				H (4, 4) = N (i, g)
 				H (5, 5) = N (i, g)
 				H (6, 6) = N (i, g)
-				external_forces (:, i) = external_forces (:, i) + matmul (H, p (:, g)) * wgts (g)
+				external_forces (:, i) = external_forces (:, i) + matmul (H, pressure (:, g)) * wgts (g)
 			end do
 		end do
 		
@@ -175,21 +175,21 @@ module beam
 	end function external_forces
 	
 	! compute elemental curvature, internal stresses and new rotation
-	subroutine curvature (X0, X, th, C, rot, om, f)
+	subroutine curvature (X0, X, th, C, rot, om, stress)
 		
 		implicit none
 		
-		double precision, dimension (:, :), intent (in) :: X0, X, th
+		double precision, dimension (:, :), intent (in) :: X0, X, th  ! (3, no nodes on ele)
 		double precision, dimension (6, 6), intent (in) :: C
-		double precision, dimension (:, :, :), intent (inout) :: rot
-		double precision, dimension (:, :), intent (inout) :: om
-		double precision, dimension (:, :), intent (out) :: f
+		double precision, dimension (:, :, :), intent (inout) :: rot  ! (no gauss, 3, 3)
+		double precision, dimension (:, :), intent (inout) :: om  ! (3, no gauss)
+		double precision, dimension (:, :), intent (out) :: stress  ! (6, no gauss)
 		integer :: g_ord, nno, e_ord, g
 		double precision :: L
-		double precision, dimension (size (om (1, :))) :: pts, wgts
-		double precision, dimension (size (X (1, :)), size (om (1, :))) :: N, dN
-		double precision, dimension (3, size (om (1, :))) :: dX, t, dt
-		double precision, dimension (size (om (1, :))) :: tn
+		double precision, dimension (size (om (1, :))) :: pts, wgts  ! (no gauss)
+		double precision, dimension (size (X (1, :)), size (om (1, :))) :: N, dN  ! (no nodes ele, no gauss)
+		double precision, dimension (3, size (om (1, :))) :: dX, t, dt  ! (3, no gauss)
+		double precision, dimension (size (om (1, :))) :: tn  ! (no gauss)
 		double precision, dimension (3, 3) :: R, rotinv
 		double precision, dimension (3) ::  b1, b2, b3, a1, a2, a3, Gamma, kappa, fn, fm
 		double precision, dimension (3), parameter :: E3 = (/ 0.0D0, 0.0D0, 1.0D0 /)
@@ -232,8 +232,8 @@ module beam
 			kappa = matmul (rotinv, om (:, g))
 			fn = matmul (C (1:3, 1:3), Gamma)
 			fm = matmul (C (4:6, 4:6), kappa)
-			f (1:3, g) = matmul (rot (g, :, :), fn)
-			f (4:6, g) = matmul (rot (g, :, :), fm)
+			stress (1:3, g) = matmul (rot (g, :, :), fn)
+			stress (4:6, g) = matmul (rot (g, :, :), fm)
 			
 		end do
 		
@@ -244,15 +244,16 @@ module beam
 		
 		implicit none
 		
-		double precision, dimension (:, :), intent (in) :: X0, X
-		double precision, dimension (:, :, :), intent (in) :: rot
+		double precision, dimension (:, :), intent (in) :: X0, X  ! (3, no nodes on ele)
+		double precision, dimension (:, :, :), intent (in) :: rot  ! (no gauss, 3, 3)
 		double precision, dimension (6, 6), intent (in) :: C
-		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: material_stiffness
+		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: material_stiffness  ! (6*no nodes on ele, 
+                                                                                                      !  6*no nodes on ele)
 		integer :: g_ord, nno, e_ord, g, i, j, ii, ij
 		double precision :: L
-		double precision, dimension (size (rot (:, 1, 1))) :: pts, wgts
-		double precision, dimension (size (X (1, :)), size (rot (:, 1, 1))) :: N, dN
-		double precision, dimension (3, size (rot (:, 1, 1))) :: dX
+		double precision, dimension (size (rot (:, 1, 1))) :: pts, wgts  ! (no gauss)
+		double precision, dimension (size (X (1, :)), size (rot (:, 1, 1))) :: N, dN  ! (no nodes on ele, no gauss)
+		double precision, dimension (3, size (rot (:, 1, 1))) :: dX  ! (3, no gauss)
 		double precision, dimension (6, 6) :: Pi_g, Xi_i, Xi_j, c_g
 		
 		g_ord = size (rot (:, 1, 1))
@@ -288,19 +289,20 @@ module beam
 	end function material_stiffness
 	
 	! compute stiffness of an element
-	function geometrical_stiffness (X0, X, rot, f)
+	function geometrical_stiffness (X0, X, rot, stress)
 		
 		implicit none
 		
-		double precision, dimension (:, :), intent (in) :: X0, X
-		double precision, dimension (:, :, :), intent (in) :: rot
-		double precision, dimension (:, :), intent (in) :: f
-		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: geometrical_stiffness
+		double precision, dimension (:, :), intent (in) :: X0, X  ! (3, no nodes on ele)
+		double precision, dimension (:, :, :), intent (in) :: rot  ! (no gauss, 3, 3)
+		double precision, dimension (:, :), intent (in) :: stress  ! (6, no gauss)
+		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: geometrical_stiffness  ! (6*no nodes on ele, 
+                                                                                                         !  6*no nodes on ele)
 		integer :: g_ord, nno, e_ord, g, i, j, ii, ij
 		double precision :: L
-		double precision, dimension (size (rot (:, 1, 1))) :: pts, wgts
-		double precision, dimension (size (X (1, :)), size (rot (:, 1, 1))) :: N, dN
-		double precision, dimension (6, size (rot (:, 1, 1))) :: dX
+		double precision, dimension (size (rot (:, 1, 1))) :: pts, wgts  ! (no gauss)
+		double precision, dimension (size (X (1, :)), size (rot (:, 1, 1))) :: N, dN  ! (no nodes on ele, no gauss)
+		double precision, dimension (6, size (rot (:, 1, 1))) :: dX  ! (6, no gauss)
 		
 		g_ord = size (rot (:, 1, 1))
 		nno = size (X0 (1, :))
@@ -322,15 +324,15 @@ module beam
 					ij = 6 * (j-1) + 1
 					geometrical_stiffness (ii:ii + 2, ij + 3:ij + 5) = &
 						geometrical_stiffness (ii:ii + 2, ij + 3:ij + 5) - &
-						wgts (g) * skew (f (1:3, g)) * dN (i, g) * N (j, g)
+						wgts (g) * skew (stress (1:3, g)) * dN (i, g) * N (j, g)
 					geometrical_stiffness (ii + 3:ii + 5, ij:ij + 2) = &
 						geometrical_stiffness (ii + 3:ii + 5, ij:ij + 2) + &
-						wgts (g) * skew (f (1:3, g)) * N (i, g) * dN (j, g)
+						wgts (g) * skew (stress (1:3, g)) * N (i, g) * dN (j, g)
 					geometrical_stiffness (ii + 3:ii + 5, ij + 3:ij + 5) = &
 						geometrical_stiffness (ii + 3:ii + 5, ij + 3:ij + 5) + &
 						wgts (g) * ( &
-							-skew (f (4:6, g)) * dN (i, g) * N (j, g) &
-							+ matmul (skew (dX (:, g)), skew (f (1:3, g))) &
+							-skew (stress (4:6, g)) * dN (i, g) * N (j, g) &
+							+ matmul (skew (dX (:, g)), skew (stress (1:3, g))) &
 							* N (i, g) * N (j, g) &
 						)
 				end do
@@ -342,7 +344,7 @@ module beam
 	end function geometrical_stiffness
 	
 	! compute stiffness of an element
-	function Kg (ele, X0, X, rot, C, f)
+	function Kg (ele, X0, X, rot, C, stress)
 	
 		implicit none
 		
@@ -350,7 +352,7 @@ module beam
 		double precision, dimension (:, :), intent (in) :: X0, X
 		double precision, dimension (:, :, :, :), intent (in) :: rot
 		double precision, dimension (6, 6), intent (in) :: C
-		double precision, dimension (:, :, :), intent (in) :: f
+		double precision, dimension (:, :, :), intent (in) :: stress
 		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Kg
 		integer :: nno, nele, neno, e, i, j, ei, ej
 		integer, dimension (size (ele (1, :))) :: ee
@@ -365,7 +367,7 @@ module beam
 			ee = ele (e, :)
 			neno = size (ee)
 			Kee = material_stiffness (X0 (:, ee), X (:, ee), rot (e, :, :, :), C) &
-				+ geometrical_stiffness (X0 (:, ee), X (:, ee), rot (e, :, :, :), f (e, :, :))
+				+ geometrical_stiffness (X0 (:, ee), X (:, ee), rot (e, :, :, :), stress (e, :, :))
 			do i = 1, neno
 				ei = ee (i)
 				do j = 1, neno
@@ -380,13 +382,13 @@ module beam
 	end function Kg
 	
 	! compute global internal force vector
-	function Fintg (ele, X0, X, f)
+	function Fintg (ele, X0, X, stress)
 	
 		implicit none
 		
 		integer, dimension (:, :), intent (in) :: ele
 		double precision, dimension (:, :), intent (in) :: X0, X
-		double precision, dimension (:, :, :), intent (in) :: f
+		double precision, dimension (:, :, :), intent (in) :: stress
 		double precision, dimension (6 * size (X (1, :))) :: Fintg
 		integer :: nno, nele, neno, e, i, ei
 		integer, dimension (size (ele (1, :))) :: ee
@@ -400,7 +402,7 @@ module beam
 		do e = 1, nele
 			ee = ele (e, :)
 			neno = size (ee)
-			Fie = internal_forces (X0 (:, ee), X (:, ee), f (e, :, :))
+			Fie = internal_forces (X0 (:, ee), X (:, ee), stress (e, :, :))
 			do i = 1, neno
 				ei = ee (i)
 				Fintg (6 * (ei - 1) + 1:6 * ei) = &
@@ -411,14 +413,14 @@ module beam
 	end function Fintg
 	
 	! compute global external force vector
-	function Fextg (ele, X0, Q, p)
+	function Fextg (ele, X0, Q, pressure)
 	
 		implicit none
 		
 		integer, dimension (:, :), intent (in) :: ele
 		double precision, dimension (:, :), intent (in) :: X0
 		double precision, dimension (:, :), intent (in) :: Q
-		double precision, dimension (:, :, :), intent (in) :: p
+		double precision, dimension (:, :, :), intent (in) :: pressure
 		double precision, dimension (6 * size (X0 (1, :))) :: Fextg
 		integer :: nno, nele, neno, e, i, ei
 		integer, dimension (size (ele (1, :))) :: ee
@@ -432,7 +434,7 @@ module beam
 		do e = 1, nele
 			ee = ele (e, :)
 			neno = size (ee)
-			Fee = external_forces (X0 (:, ee), p (e, :, :))
+			Fee = external_forces (X0 (:, ee), pressure (e, :, :))
 			do i = 1, neno
 				ei = ee (i)
 				Fextg (6 * (ei - 1) + 1:6 * ei) = &
@@ -445,7 +447,7 @@ module beam
 	end function Fextg
 	
 	! compute global external force vector
-	subroutine curv (ele, X0, X, th, C, rot, om, f)
+	subroutine curv (ele, X0, X, th, C, rot, om, stress)
 	
 		implicit none
 		
@@ -454,7 +456,7 @@ module beam
 		double precision, dimension (6, 6), intent (in) :: C
 		double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
 		double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-		double precision, dimension (:, :, :), intent (out) :: f  ! (no ele, 6, no gauss)
+		double precision, dimension (:, :, :), intent (out) :: stress  ! (no ele, 6, no gauss)
 		integer :: nno, nele, e
 		integer, dimension (size (ele (1, :))) :: ee
 		
@@ -465,7 +467,7 @@ module beam
 			ee = ele (e, :)
 			call curvature ( &
 				X0 (:, ee), X (:, ee), th (:, ee), C, &
-				rot (e, :, :, :), om (e, :, :), f (e, :, :) &
+				rot (e, :, :, :), om (e, :, :), stress (e, :, :) &
 			)
 		end do
 		
