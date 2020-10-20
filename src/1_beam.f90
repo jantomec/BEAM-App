@@ -22,7 +22,7 @@ module beam
 	
 	private
 	
-	public :: Kg, Fintg, Fextg, curv
+	public :: assemble_tangent, Fintg, Fextg, curv
 	
 	contains
 	
@@ -344,20 +344,21 @@ module beam
 	end function geometrical_stiffness
 	
 	! compute stiffness of an element
-	function Kg (ele, X0, X, rot, C, stress)
+	function assemble_tangent (ele, X0, X, rot, C, stress) result (Kg)
 	
 		implicit none
 		
-		integer, dimension (:, :), intent (in) :: ele
-		double precision, dimension (:, :), intent (in) :: X0, X
-		double precision, dimension (:, :, :, :), intent (in) :: rot
+		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
+		double precision, dimension (:, :), intent (in) :: X0, X  ! (3, no nodes)
+		double precision, dimension (:, :, :, :), intent (in) :: rot  ! (no ele, no gauss, 3, 3)
 		double precision, dimension (6, 6), intent (in) :: C
-		double precision, dimension (:, :, :), intent (in) :: stress
-		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Kg
+		double precision, dimension (:, :, :), intent (in) :: stress  ! (no ele, 6, no gauss)
+		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Kg  ! (6*no nodes, 6*no nodes)
 		integer :: nno, nele, neno, e, i, j, ei, ej
-		integer, dimension (size (ele (1, :))) :: ee
-		double precision, dimension (6 * size (ele (1, :)), 6 * size (ele (1, :))) :: Kee
-				
+		integer, dimension (size (ele (1, :))) :: ee  ! (no nodes on ele)
+		double precision, dimension (6 * size (ele (1, :)), 6 * size (ele (1, :))) :: Ke  ! (6*no nodes on ele, 
+                                                                                           !  6*no nodes on ele)
+        
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
 				
@@ -366,7 +367,7 @@ module beam
 		do e = 1, nele
 			ee = ele (e, :)
 			neno = size (ee)
-			Kee = material_stiffness (X0 (:, ee), X (:, ee), rot (e, :, :, :), C) &
+			Ke = material_stiffness (X0 (:, ee), X (:, ee), rot (e, :, :, :), C) &
 				+ geometrical_stiffness (X0 (:, ee), X (:, ee), rot (e, :, :, :), stress (e, :, :))
 			do i = 1, neno
 				ei = ee (i)
@@ -374,12 +375,12 @@ module beam
 					ej = ee (j)
 					Kg (6 * (ei - 1) + 1:6 * ei, 6 * (ej - 1) + 1:6 * ej) = &
 						Kg (6 * (ei - 1) + 1:6 * ei, 6 * (ej - 1) + 1:6 * ej) &
-						+ Kee (6 * (i - 1) + 1:6 * i, 6 * (j - 1) + 1:6 * j)
+						+ Ke (6 * (i - 1) + 1:6 * i, 6 * (j - 1) + 1:6 * j)
 				end do
 			end do
 		end do
 		
-	end function Kg
+	end function assemble_tangent
 	
 	! compute global internal force vector
 	function Fintg (ele, X0, X, stress)
@@ -445,6 +446,41 @@ module beam
 		Fextg = Fextg + reshape (Q, (/ 6 * nno /))
 	
 	end function Fextg
+    
+    function assemble_residual (ele, X0, X, stress, Q, pressure) result (Rg)
+    
+		implicit none
+		
+		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
+		double precision, dimension (:, :), intent (in) :: X0, X  ! (3, no nodes)
+		double precision, dimension (:, :, :), intent (in) :: stress  ! (no ele, 6, no gauss)
+		double precision, dimension (:, :), intent (in) :: Q  ! (6, no nodes)
+		double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no gauss)
+		double precision, dimension (6 * size (X (1, :))) :: Rg  ! (6*no nodes)
+		integer :: nno, nele, neno, e, i, ei
+		integer, dimension (size (ele (1, :))) :: ee  ! (no nodes on ele)
+		double precision, dimension (6, size (ele (1, :))) :: Fint, Fext  ! (6, no nodes on ele)
+		
+		nno = size (X0 (1, :))
+		nele = size (ele (:, 1))
+		
+		Rg = 0.0D0
+		
+		do e = 1, nele
+			ee = ele (e, :)
+			neno = size (ee)
+			Fint = internal_forces (X0 (:, ee), X (:, ee), stress (e, :, :))
+            Fext = external_forces (X0 (:, ee), pressure (e, :, :))
+			do i = 1, neno
+				ei = ee (i)
+				Rg (6 * (ei - 1) + 1:6 * ei) = &
+					Rg (6 * (ei - 1) + 1:6 * ei) + Fext (:, i) - Fint (:, i)
+			end do
+		end do
+        
+        Rg = Rg + reshape (Q, (/ 6 * nno /))
+	
+    end function assemble_residual
 	
 	! compute global external force vector
 	subroutine curv (ele, X0, X, th, C, rot, om, stress)

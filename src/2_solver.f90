@@ -89,10 +89,10 @@ module solver
 	! DOF .......... degrees of freedom (6, no all nodes)
 	! Uload ........ prescribed displacement/rotation (6, no all nodes)
 	! Q ............ nodal load (6, no all nodes)
-	! p ............ distributed load (no ele, 6, no gauss)
+	! pressure ............ distributed load (no ele, 6, no gauss)
 	! rot .......... rotations in gauss points (no ele, no gauss, 3, 3)
 	! om ........... curvature vector (no ele, 3, no gauss)
-	! f ............ internal force vector (no ele, 3, no gauss)
+	! stress ............ internal force vector (no ele, 3, no gauss)
 	! resout ....... residual vector (6, no all nodes)
 	! TOLER ........ tolerance for convergence
 	! MAXITER ...... maximum no of iterations
@@ -104,8 +104,8 @@ module solver
 	!                    3 = Solver error (dgetrs)
 	! prints ....... boolean, indicating if intermediate info statements should be printed
     !
-	! modify U, rot, om, f
-	subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errck, prints)
+	! modify U, rot, om, stress
+	subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, errck, prints)
 	
 		implicit none
 		
@@ -115,10 +115,10 @@ module solver
 		double precision, dimension (6, 6), intent (in) :: C
 		logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
 		double precision, dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
-		double precision, dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
+		double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
 		double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
 		double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-		double precision, dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
+		double precision, dimension (:, :, :), intent (inout) :: stress  ! (no ele, 6, no gauss)
 		double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
 		double precision, intent (in) :: TOLER
 		integer, intent (in) :: MAXITER
@@ -130,7 +130,7 @@ module solver
 		integer :: nno, ndof, i, j, k, info
 		double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
 		double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth
-		double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R, resflat
+		double precision, dimension (6 * size (X0 (1, :))) :: R, resflat
 		double precision, dimension (6, size (X0 (1, :))) :: res
 		integer, dimension (6 * size (X0 (1, :))) :: ipiv
 		logical, dimension (6 * size (X0 (1, :))) :: DOFflat
@@ -153,7 +153,7 @@ module solver
 			Niter = i + 1
 			
 			if (i > 0) then
-				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
+				tangent = assemble_tangent (ele, X0, X, rot, C, stress)  ! tangent
 				
                 do j = 1, ndof
                     if (.NOT. DOFflat (j)) then
@@ -185,11 +185,9 @@ module solver
 			U = U + dU
 			X = X0 + U
                         
-			call curv (ele, X0, X, dth, C, rot, om, f)
+			call curv (ele, X0, X, dth, C, rot, om, stress)
 			
-            Fint = Fintg (ele, X0, X, f)
-			Fext = Fextg (ele, X0, Q, p)
-			R = Fext - Fint
+			R = assemble_residual(ele, X0, X, stress, Q, pressure)
             
             do j = 1, ndof
                 if (.NOT. DOFflat (j)) R(j) = 0.0D0
@@ -221,17 +219,17 @@ module solver
 	! DOF .......... degrees of freedom (6, no all nodes)
 	! Uload ........ prescribed displacement/rotation (6, no all nodes)
 	! Q ............ nodal load (6, no all nodes)
-	! p ............ distributed load (no ele, 6, no gauss)
+	! pressure ............ distributed load (no ele, 6, no gauss)
 	! rot .......... rotations in gauss points (no ele, no gauss, 3, 3)
 	! om ........... curvature vector (no ele, 3, no gauss)
-	! f ............ internal force vector (no ele, 3, no gauss)
+	! stress ............ internal force vector (no ele, 3, no gauss)
 	! resout ....... residual vector (6, no all nodes)
 	! TOLER ........ tolerance for convergence
 	! MAXITER ...... maximum no of iterations
 	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
 	!
-	! modify U, rot, om, f
-	subroutine newton_iter_det (ele, X0, U, C, DOF, Uload, Q, p, rot, om, f, resout, TOLER, MAXITER, TEST, Niter, errck)
+	! modify U, rot, om, stress
+	subroutine newton_iter_det (ele, X0, U, C, DOF, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, errck)
 	
 		implicit none
 		
@@ -241,10 +239,10 @@ module solver
 		double precision, dimension (6, 6), intent (in) :: C
 		logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
 		double precision, dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
-		double precision, dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
+		double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
 		double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
 		double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-		double precision, dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
+		double precision, dimension (:, :, :), intent (inout) :: stress  ! (no ele, 6, no gauss)
 		double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
 		double precision, intent (in) :: TOLER
 		integer, intent (in) :: MAXITER
@@ -283,7 +281,7 @@ module solver
 			
 			if (i > 0) then
 				res = 0.0D0
-				tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
+				tangent = assemble_tangent (ele, X0, X, rot, C, stress)  ! tangent
 				
 				call pack2 (tangent, DOFsel, K2)
 				
@@ -323,10 +321,10 @@ module solver
 			U = U + dU
 			X = X0 + U
 			
-			call curv (ele, X0, X, dth, C, rot, om, f)
+			call curv (ele, X0, X, dth, C, rot, om, stress)
 			
-			Fint = Fintg (ele, X0, X, f)
-			Fext = Fextg (ele, X0, Q, p)
+			Fint = Fintg (ele, X0, X, stress)
+			Fext = Fextg (ele, X0, Q, pressure)
 			R = Fint - Fext
 			R1 = pack (R, DOFsel)
 			
@@ -379,10 +377,10 @@ module solver
 	! DOF .......... degrees of freedom (6, no all nodes)
 	! Uload ........ prescribed displacement/rotation (6, no all nodes)
 	! Q ............ nodal load (6, no all nodes)
-	! p ............ distributed load (no ele, 6, no gauss)
+	! pressure ............ distributed load (no ele, 6, no gauss)
 	! rot .......... rotations in gauss points (no ele, no gauss, 3, 3)
 	! om ........... curvature vector (no ele, 3, no gauss)
-	! f ............ internal force vector (no ele, 3, no gauss)
+	! stress ............ internal force vector (no ele, 3, no gauss)
 	! resout ....... residual vector (6, no all nodes)
 	! lambda ....... load multiplier
 	! dS ........... convergence radius
@@ -390,8 +388,8 @@ module solver
 	! MAXITER ...... maximum no of iterations
 	! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
 	!
-	! modify U, rot, om, f
-	subroutine arc_length_iter (ele, X0, Uinc, U, C, DOF, Q, QC, p, rot, om, f, resout, lambda, dS, TOLER, MAXITER, Niter, errck)
+	! modify U, rot, om, stress
+	subroutine arc_length_iter (ele, X0, Uinc, U, C, DOF, Q, QC, pressure, rot, om, stress, resout, lambda, dS, TOLER, MAXITER, Niter, errck)
 	
 		implicit none
 		
@@ -402,10 +400,10 @@ module solver
 		double precision, dimension (6, 6), intent (in) :: C
 		logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
 		double precision, dimension (:, :), intent (in) :: Q, QC  ! (6, no all nodes)
-		double precision, dimension (:, :, :), intent (in) :: p  ! (no ele, 6, no nodes on ele)
+		double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
 		double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
 		double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-		double precision, dimension (:, :, :), intent (inout) :: f  ! (no ele, 6, no gauss)
+		double precision, dimension (:, :, :), intent (inout) :: stress  ! (no ele, 6, no gauss)
 		double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
 		double precision, intent (inout) :: lambda
 		double precision, intent (in) :: dS
@@ -439,9 +437,9 @@ module solver
 		allocate (K2 (ndof, ndof))
 		allocate (R2 (ndof, 2), ipiv (ndof))
 		
-		Fint = Fintg (ele, X0, X, f)
-		Fext = Fextg (ele, X0, Q, p)
-		FC = Fextg (ele, X0, QC, p)
+		Fint = Fintg (ele, X0, X, stress)
+		Fext = Fextg (ele, X0, Q, pressure)
+		FC = Fextg (ele, X0, QC, pressure)
 		R = Fint - lambda * Fext - FC
 		R2 (:, 1) = pack (Fext, DOFsel)
 		R2 (:, 2) = pack (-R, DOFsel)
@@ -456,7 +454,7 @@ module solver
 			res2F = 0.0D0
 			res2R = 0.0D0
 			
-			tangent = Kg (ele, X0, X, rot, C, f)  ! tangent
+			tangent = assemble_tangent (ele, X0, X, rot, C, stress)  ! tangent
 			call pack2 (tangent, DOFsel, K2)
 			
 			call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
@@ -521,8 +519,8 @@ module solver
 			U = U + dUR + dlambda * dUF
 			X = X0 + U
 			dth = thR + dlambda * thF
-			call curv (ele, X0, X, dth, C, rot, om, f)
-			Fint = Fintg (ele, X0, X, f)
+			call curv (ele, X0, X, dth, C, rot, om, stress)
+			Fint = Fintg (ele, X0, X, stress)
 			R = Fint - lambda * Fext - FC
 			R2 (:, 1) = pack (Fext, DOFsel)
 			R2 (:, 2) = pack (-R, DOFsel)
