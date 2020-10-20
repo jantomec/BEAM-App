@@ -22,7 +22,7 @@ module beam
 	
 	private
 	
-	public :: assemble_tangent, Fintg, Fextg, curv
+	public :: assemble_external_force, assemble_internal_force, update_stress_strain
 	
 	contains
 	
@@ -383,14 +383,14 @@ module beam
 	end function assemble_tangent
 	
 	! compute global internal force vector
-	function Fintg (ele, X0, X, stress)
+	function assemble_internal_force (ele, X0, X, stress) return (Fint)
 	
 		implicit none
 		
-		integer, dimension (:, :), intent (in) :: ele
-		double precision, dimension (:, :), intent (in) :: X0, X
-		double precision, dimension (:, :, :), intent (in) :: stress
-		double precision, dimension (6 * size (X (1, :))) :: Fintg
+		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
+		double precision, dimension (:, :), intent (in) :: X0, X  ! (3, no nodes)
+		double precision, dimension (:, :, :), intent (in) :: stress  ! (no ele, 6, no gauss)
+		double precision, dimension (6 * size (X (1, :))) :: Fint  ! (6*no nodes)
 		integer :: nno, nele, neno, e, i, ei
 		integer, dimension (size (ele (1, :))) :: ee
 		double precision, dimension (6, size (ele (1, :))) :: Fie
@@ -398,7 +398,7 @@ module beam
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
 		
-		Fintg = 0.0D0
+		Fint = 0.0D0
 		
 		do e = 1, nele
 			ee = ele (e, :)
@@ -406,15 +406,15 @@ module beam
 			Fie = internal_forces (X0 (:, ee), X (:, ee), stress (e, :, :))
 			do i = 1, neno
 				ei = ee (i)
-				Fintg (6 * (ei - 1) + 1:6 * ei) = &
-					Fintg (6 * (ei - 1) + 1:6 * ei) + Fie (:, i)
+				Fint (6 * (ei - 1) + 1:6 * ei) = &
+					Fint (6 * (ei - 1) + 1:6 * ei) + Fie (:, i)
 			end do
 		end do
 	
-	end function Fintg
+	end function Fint
 	
 	! compute global external force vector
-	function Fextg (ele, X0, Q, pressure)
+	function assemble_external_force (ele, X0, Q, pressure) return (Fext)
 	
 		implicit none
 		
@@ -422,7 +422,7 @@ module beam
 		double precision, dimension (:, :), intent (in) :: X0
 		double precision, dimension (:, :), intent (in) :: Q
 		double precision, dimension (:, :, :), intent (in) :: pressure
-		double precision, dimension (6 * size (X0 (1, :))) :: Fextg
+		double precision, dimension (6 * size (X0 (1, :))) :: Fext
 		integer :: nno, nele, neno, e, i, ei
 		integer, dimension (size (ele (1, :))) :: ee
 		double precision, dimension (6, size (ele (1, :))) :: Fee
@@ -430,7 +430,7 @@ module beam
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
 		
-		Fextg = 0.0D0
+		Fext = 0.0D0
 		
 		do e = 1, nele
 			ee = ele (e, :)
@@ -438,52 +438,17 @@ module beam
 			Fee = external_forces (X0 (:, ee), pressure (e, :, :))
 			do i = 1, neno
 				ei = ee (i)
-				Fextg (6 * (ei - 1) + 1:6 * ei) = &
-					Fextg (6 * (ei - 1) + 1:6 * ei) + Fee (:, i)			
+				Fext (6 * (ei - 1) + 1:6 * ei) = &
+					Fext (6 * (ei - 1) + 1:6 * ei) + Fee (:, i)			
 			end do
 		end do
 		
-		Fextg = Fextg + reshape (Q, (/ 6 * nno /))
+		Fext = Fext + reshape (Q, (/ 6 * nno /))
 	
-	end function Fextg
-    
-    function assemble_residual (ele, X0, X, stress, Q, pressure) result (Rg)
-    
-		implicit none
-		
-		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
-		double precision, dimension (:, :), intent (in) :: X0, X  ! (3, no nodes)
-		double precision, dimension (:, :, :), intent (in) :: stress  ! (no ele, 6, no gauss)
-		double precision, dimension (:, :), intent (in) :: Q  ! (6, no nodes)
-		double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no gauss)
-		double precision, dimension (6 * size (X (1, :))) :: Rg  ! (6*no nodes)
-		integer :: nno, nele, neno, e, i, ei
-		integer, dimension (size (ele (1, :))) :: ee  ! (no nodes on ele)
-		double precision, dimension (6, size (ele (1, :))) :: Fint, Fext  ! (6, no nodes on ele)
-		
-		nno = size (X0 (1, :))
-		nele = size (ele (:, 1))
-		
-		Rg = 0.0D0
-		
-		do e = 1, nele
-			ee = ele (e, :)
-			neno = size (ee)
-			Fint = internal_forces (X0 (:, ee), X (:, ee), stress (e, :, :))
-            Fext = external_forces (X0 (:, ee), pressure (e, :, :))
-			do i = 1, neno
-				ei = ee (i)
-				Rg (6 * (ei - 1) + 1:6 * ei) = &
-					Rg (6 * (ei - 1) + 1:6 * ei) + Fext (:, i) - Fint (:, i)
-			end do
-		end do
-        
-        Rg = Rg + reshape (Q, (/ 6 * nno /))
-	
-    end function assemble_residual
+	end function Fext
 	
 	! compute global external force vector
-	subroutine curv (ele, X0, X, th, C, rot, om, stress)
+	subroutine update_stress_strain (ele, X0, X, th, C, rot, om, stress)
 	
 		implicit none
 		

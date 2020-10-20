@@ -130,7 +130,7 @@ module solver
 		integer :: nno, ndof, i, j, k, info
 		double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
 		double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth
-		double precision, dimension (6 * size (X0 (1, :))) :: R, resflat
+		double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R, resflat
 		double precision, dimension (6, size (X0 (1, :))) :: res
 		integer, dimension (6 * size (X0 (1, :))) :: ipiv
 		logical, dimension (6 * size (X0 (1, :))) :: DOFflat
@@ -185,9 +185,11 @@ module solver
 			U = U + dU
 			X = X0 + U
                         
-			call curv (ele, X0, X, dth, C, rot, om, stress)
+			call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
 			
-			R = assemble_residual(ele, X0, X, stress, Q, pressure)
+            Fint = assemble_internal_force (ele, X0, X, stress)
+			Fext = assemble_external_force (ele, X0, Q, pressure)
+			R = Fext - Fint
             
             do j = 1, ndof
                 if (.NOT. DOFflat (j)) R(j) = 0.0D0
@@ -321,7 +323,7 @@ module solver
 			U = U + dU
 			X = X0 + U
 			
-			call curv (ele, X0, X, dth, C, rot, om, stress)
+			call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
 			
 			Fint = Fintg (ele, X0, X, stress)
 			Fext = Fextg (ele, X0, Q, pressure)
@@ -519,7 +521,7 @@ module solver
 			U = U + dUR + dlambda * dUF
 			X = X0 + U
 			dth = thR + dlambda * thF
-			call curv (ele, X0, X, dth, C, rot, om, stress)
+			call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
 			Fint = Fintg (ele, X0, X, stress)
 			R = Fint - lambda * Fext - FC
 			R2 (:, 1) = pack (Fext, DOFsel)
