@@ -41,8 +41,8 @@ program test03
 	double precision, parameter :: TOLER = 1D-8
 	integer, parameter :: MAXSTEPS = 1000
 	double precision, dimension (6), parameter :: material = (/ 170000.0D0, 170.0D0, 17000.0D0, 170.0D0, 170.0D0, 170.0D0 /)
-	character (len = 14), parameter :: folder = 'test03-results'
-	character (len = 27), parameter :: fname_format = '("test03_", I0.3, ".dat")'
+	character (len = 12), parameter :: folder = 'arch-results'
+	character (len = 25), parameter :: fname_format = '("arch_", I0.3, ".dat")'
 	
 	type (ElementMesh) :: mesh
 	double precision :: lambda
