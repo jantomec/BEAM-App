@@ -55,52 +55,52 @@ module beam
 	end function element_length
 	
 	! compute single Pi matrix
-	function Pi (rot)
+	function Pi_matrix (rot)
 	
 		implicit none
 		
 		double precision, dimension (3, 3), intent (in) :: rot
-		double precision, dimension (6, 6) :: Pi
+		double precision, dimension (6, 6) :: Pi_matrix
 		
-		Pi = 0.0D0
-		Pi (1:3, 1:3) = rot
-		Pi (4:6, 4:6) = rot
+		Pi_matrix = 0.0D0
+		Pi_matrix (1:3, 1:3) = rot
+		Pi_matrix (4:6, 4:6) = rot
 		
-	end function Pi
+	end function Pi_matrix
 	
 	! compute single Xi matrix
-	function Xi (dX, N, dN)
+	function Xi_matrix (dX, N, dN)
 	
 		implicit none
 		
 		double precision, dimension (:), intent (in) :: dX
 		double precision, intent (in) :: N, dN
-		double precision, dimension (6, 6) :: Xi
+		double precision, dimension (6, 6) :: Xi_matrix
 		double precision, dimension (3, 3) :: S
 		integer :: i
 		
 		S = skew (dX)
-		Xi = 0.0D0
+		Xi_matrix = 0.0D0
 		do i = 1, 6
-			Xi (i, i) = dN
+			Xi_matrix (i, i) = dN
 		end do
-		Xi (4, 2) = - N * S (1, 2)
-		Xi (4, 3) = - N * S (1, 3)
-		Xi (5, 1) = - N * S (2, 1)
-		Xi (5, 3) = - N * S (2, 3)
-		Xi (6, 1) = - N * S (3, 1)
-		Xi (6, 2) = - N * S (3, 2)
+		Xi_matrix (4, 2) = - N * S (1, 2)
+		Xi_matrix (4, 3) = - N * S (1, 3)
+		Xi_matrix (5, 1) = - N * S (2, 1)
+		Xi_matrix (5, 3) = - N * S (2, 3)
+		Xi_matrix (6, 1) = - N * S (3, 1)
+		Xi_matrix (6, 2) = - N * S (3, 2)
 		
-	end function Xi
+	end function Xi_matrix
 	
 	! compute elemental internal forces in nodes
-	function Finte (X0, X, f)
+	function internal_forces (X0, X, f)
 		
 		implicit none
 		
 		double precision, dimension (:, :), intent (in) :: X0, X
 		double precision, dimension (:, :), intent (in) :: f
-		double precision, dimension (6, size (X0(1,:))) :: Finte
+		double precision, dimension (6, size (X0(1,:))) :: internal_forces
 		integer :: g_ord, nno, e_ord, g, i
 		double precision :: L
 		double precision, dimension (size (f (1, :))) :: pts, wgts
@@ -120,27 +120,27 @@ module beam
 		
 		dX = matmul (X, dN)
 
-		Finte = 0.0D0
+		internal_forces = 0.0D0
 		
 		do g = 1, g_ord
 			do i = 1, nno
-				Xi_i = Xi (dX (:, g), N (i, g), dN (i, g))
-				Finte (:, i) = Finte (:, i) + matmul (Xi_i, f (:, g)) * wgts (g)
+				Xi_i = Xi_matrix (dX (:, g), N (i, g), dN (i, g))
+				internal_forces (:, i) = internal_forces (:, i) + matmul (Xi_i, f (:, g)) * wgts (g)
 			end do
 		end do
 		
-		Finte = L / 2.0D0 * Finte
+		internal_forces = L / 2.0D0 * internal_forces
 	
-	end function Finte
+	end function internal_forces
 	
 	! compute elemental external forces in nodes
-	function Fexte (X0, p)
+	function external_forces (X0, p)
 		
 		implicit none
 		
 		double precision, dimension (:, :), intent (in) :: X0
 		double precision, dimension (:, :), intent (in) :: p
-		double precision, dimension (6, size (X0 (1,:))) :: Fexte
+		double precision, dimension (6, size (X0 (1,:))) :: external_forces
 		integer :: g_ord, nno, e_ord, g, i
 		double precision :: L
 		double precision, dimension (size (p (1, :))) :: pts, wgts
@@ -155,7 +155,7 @@ module beam
 		call legauss (g_ord, pts, wgts)
 		N = shfun (e_ord, pts)
 		
-		Fexte = 0.0D0
+		external_forces = 0.0D0
 		
 		do g = 1, g_ord
 			H = 0.0D0
@@ -166,16 +166,16 @@ module beam
 				H (4, 4) = N (i, g)
 				H (5, 5) = N (i, g)
 				H (6, 6) = N (i, g)
-				Fexte (:, i) = Fexte (:, i) + matmul (H, p (:, g)) * wgts (g)
+				external_forces (:, i) = external_forces (:, i) + matmul (H, p (:, g)) * wgts (g)
 			end do
 		end do
 		
-		Fexte = L / 2.0D0 * Fexte
+		external_forces = L / 2.0D0 * external_forces
 				
-	end function Fexte
+	end function external_forces
 	
 	! compute elemental curvature, internal stresses and new rotation
-	subroutine curve (X0, X, th, C, rot, om, f)
+	subroutine curvature (X0, X, th, C, rot, om, f)
 		
 		implicit none
 		
@@ -237,17 +237,17 @@ module beam
 			
 		end do
 		
-	end subroutine curve
+	end subroutine curvature
 	
 	! compute stiffness of an element
-	function Ke (X0, X, rot, C)
+	function material_stiffness (X0, X, rot, C)
 		
 		implicit none
 		
 		double precision, dimension (:, :), intent (in) :: X0, X
 		double precision, dimension (:, :, :), intent (in) :: rot
 		double precision, dimension (6, 6), intent (in) :: C
-		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Ke
+		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: material_stiffness
 		integer :: g_ord, nno, e_ord, g, i, j, ii, ij
 		double precision :: L
 		double precision, dimension (size (rot (:, 1, 1))) :: pts, wgts
@@ -266,36 +266,36 @@ module beam
 		
 		dX = matmul (X, dN)
 		
-		Ke = 0.0D0
+		material_stiffness = 0.0D0
 		
 		do g = 1, g_ord
-			Pi_g = Pi (rot (g, :, :))
+			Pi_g = Pi_matrix (rot (g, :, :))
 			c_g = matmul (matmul (Pi_g, C), transpose (Pi_g))
 			do i = 1, nno
 				ii = 6 * (i-1) + 1
-				Xi_i = Xi (dX (:, g), N (i, g), dN (i, g))
+				Xi_i = Xi_matrix (dX (:, g), N (i, g), dN (i, g))
 				do j = 1, nno
-					Xi_j = Xi (dX (:, g), N (j, g), dN (j, g))
+					Xi_j = Xi_matrix (dX (:, g), N (j, g), dN (j, g))
 					ij = 6 * (j-1) + 1
-					Ke (ii:ii + 5, ij:ij + 5) = Ke (ii:ii + 5, ij:ij + 5) + &
+					material_stiffness (ii:ii + 5, ij:ij + 5) = material_stiffness (ii:ii + 5, ij:ij + 5) + &
 						wgts (g) * matmul (matmul (Xi_i, c_g), transpose (Xi_j))
 				end do
 			end do
 		end do
 		
-		Ke = L / 2.0D0 * Ke
+		material_stiffness = L / 2.0D0 * material_stiffness
 	
-	end function Ke
+	end function material_stiffness
 	
 	! compute stiffness of an element
-	function Kgeoe (X0, X, rot, f)
+	function geometrical_stiffness (X0, X, rot, f)
 		
 		implicit none
 		
 		double precision, dimension (:, :), intent (in) :: X0, X
 		double precision, dimension (:, :, :), intent (in) :: rot
 		double precision, dimension (:, :), intent (in) :: f
-		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Kgeoe
+		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: geometrical_stiffness
 		integer :: g_ord, nno, e_ord, g, i, j, ii, ij
 		double precision :: L
 		double precision, dimension (size (rot (:, 1, 1))) :: pts, wgts
@@ -313,21 +313,21 @@ module beam
 		
 		dX = matmul (X, dN)
 		
-		Kgeoe = 0.0D0
+		geometrical_stiffness = 0.0D0
 		
 		do g = 1, g_ord
 			do i = 1, nno
 				ii = 6 * (i-1) + 1
 				do j = 1, nno
 					ij = 6 * (j-1) + 1
-					Kgeoe (ii:ii + 2, ij + 3:ij + 5) = &
-						Kgeoe (ii:ii + 2, ij + 3:ij + 5) - &
+					geometrical_stiffness (ii:ii + 2, ij + 3:ij + 5) = &
+						geometrical_stiffness (ii:ii + 2, ij + 3:ij + 5) - &
 						wgts (g) * skew (f (1:3, g)) * dN (i, g) * N (j, g)
-					Kgeoe (ii + 3:ii + 5, ij:ij + 2) = &
-						Kgeoe (ii + 3:ii + 5, ij:ij + 2) + &
+					geometrical_stiffness (ii + 3:ii + 5, ij:ij + 2) = &
+						geometrical_stiffness (ii + 3:ii + 5, ij:ij + 2) + &
 						wgts (g) * skew (f (1:3, g)) * N (i, g) * dN (j, g)
-					Kgeoe (ii + 3:ii + 5, ij + 3:ij + 5) = &
-						Kgeoe (ii + 3:ii + 5, ij + 3:ij + 5) + &
+					geometrical_stiffness (ii + 3:ii + 5, ij + 3:ij + 5) = &
+						geometrical_stiffness (ii + 3:ii + 5, ij + 3:ij + 5) + &
 						wgts (g) * ( &
 							-skew (f (4:6, g)) * dN (i, g) * N (j, g) &
 							+ matmul (skew (dX (:, g)), skew (f (1:3, g))) &
@@ -337,9 +337,9 @@ module beam
 			end do
 		end do
 		
-		Kgeoe = L / 2.0D0 * Kgeoe
+		geometrical_stiffness = L / 2.0D0 * geometrical_stiffness
 	
-	end function Kgeoe
+	end function geometrical_stiffness
 	
 	! compute stiffness of an element
 	function Kg (ele, X0, X, rot, C, f)
@@ -364,8 +364,8 @@ module beam
 		do e = 1, nele
 			ee = ele (e, :)
 			neno = size (ee)
-			Kee = Ke (X0 (:, ee), X (:, ee), rot (e, :, :, :), C) &
-				+ Kgeoe (X0 (:, ee), X (:, ee), rot (e, :, :, :), f (e, :, :))
+			Kee = material_stiffness (X0 (:, ee), X (:, ee), rot (e, :, :, :), C) &
+				+ geometrical_stiffness (X0 (:, ee), X (:, ee), rot (e, :, :, :), f (e, :, :))
 			do i = 1, neno
 				ei = ee (i)
 				do j = 1, neno
@@ -400,7 +400,7 @@ module beam
 		do e = 1, nele
 			ee = ele (e, :)
 			neno = size (ee)
-			Fie = Finte (X0 (:, ee), X (:, ee), f (e, :, :))
+			Fie = internal_forces (X0 (:, ee), X (:, ee), f (e, :, :))
 			do i = 1, neno
 				ei = ee (i)
 				Fintg (6 * (ei - 1) + 1:6 * ei) = &
@@ -432,7 +432,7 @@ module beam
 		do e = 1, nele
 			ee = ele (e, :)
 			neno = size (ee)
-			Fee = Fexte (X0 (:, ee), p (e, :, :))
+			Fee = external_forces (X0 (:, ee), p (e, :, :))
 			do i = 1, neno
 				ei = ee (i)
 				Fextg (6 * (ei - 1) + 1:6 * ei) = &
@@ -463,7 +463,7 @@ module beam
 		
 		do e = 1, nele
 			ee = ele (e, :)
-			call curve ( &
+			call curvature ( &
 				X0 (:, ee), X (:, ee), th (:, ee), C, &
 				rot (e, :, :, :), om (e, :, :), f (e, :, :) &
 			)
