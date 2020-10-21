@@ -92,6 +92,8 @@ module solver
         integer, dimension (size (dof)) :: ipiv
         double precision, dimension (size (dof)) :: bflat
         
+        external dgetrf, dgetrs
+        
         ndof = size (dof)
         bflat = pack (b, .TRUE.)
         
@@ -170,8 +172,6 @@ module solver
         logical, dimension (6 * size (X0 (1, :))) :: dof
         double precision :: convtest
         
-        external dgetrf, dgetrs
-                
         nno = size (X0 (1, :))
         ndof = 6 * nno
         
