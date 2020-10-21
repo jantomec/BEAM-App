@@ -141,7 +141,7 @@ module solver
     ! prints ....... boolean, indicating if intermediate info statements should be printed
     !
     ! modify U, rot, om, stress
-    subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, errck, prints)
+    subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, prints)
     
         implicit none
         
@@ -160,7 +160,6 @@ module solver
         integer, intent (in) :: MAXITER
         character (len = 3), intent (in) :: TEST
         integer, intent (out) :: Niter
-        integer, intent (out) :: errck
         logical, intent (in) :: prints
         
         integer :: nno, ndof, i, j, k, info
@@ -173,9 +172,7 @@ module solver
         double precision :: convtest
         
         external dgetrf, dgetrs
-        
-        errck = 0
-        
+                
         nno = size (X0 (1, :))
         ndof = 6 * nno
         
@@ -199,18 +196,8 @@ module solver
                     end if
                 end do
                 
-                call dgetrf (ndof, ndof, tangent, ndof, ipiv, info)  ! LU factorization
-                if (info .ne. 0) then
-                    errck = 2
-                    exit
-                end if
-                
-                call dgetrs ('N', ndof, 1, tangent, ndof, ipiv, R, ndof, info)  ! solve system
-                if (info .ne. 0) then
-                    errck = 3
-                    exit
-                end if
-                
+                call solve ('N', ndof, 1, tangent, ndof, ipiv, R, ndof)
+                                
                 resflat = R
                 res = reshape (resflat, (/ 6, nno /))
             end if
