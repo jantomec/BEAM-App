@@ -26,37 +26,37 @@ module solver
     
     contains
     
-    subroutine pack2 (A, DOF, B)
+    subroutine pack2 (A, DOF6, B)
         
         implicit none
         
         double precision, dimension (:, :), intent (in) :: A
-        logical, dimension (:), intent (in) :: DOF
+        logical, dimension (:), intent (in) :: DOF6
         double precision, dimension (:, :), intent (out) :: B
         double precision, dimension (size (A (:, 1)), size (B (1, :))) :: AB
         integer :: j
         
         do j = 1, size (A (:, 1))
-            AB (j, :) = pack (A (j, :), DOF)
+            AB (j, :) = pack (A (j, :), DOF6)
         end do
         do j = 1, size (B (1, :))
-            B (:, j) = pack (AB (:, j), DOF)
+            B (:, j) = pack (AB (:, j), DOF6)
         end do
     
     end subroutine pack2
     
-    subroutine logicwrite (A, DOF, B)
+    subroutine logicwrite (A, DOF6, B)
         
         implicit none
         
         double precision, dimension (:), intent (in) :: A
-        logical, dimension (:), intent (in) :: DOF
+        logical, dimension (:), intent (in) :: DOF6
         double precision, dimension (:), intent (out) :: B
         integer :: j, k
         
         k = 1
         do j = 1, size (B)  ! overwrite the result
-            if (DOF (j) .eqv. .TRUE.) then
+            if (DOF6 (j) .eqv. .TRUE.) then
                 B (j) = A (k)
                 k = k + 1
             end if
@@ -80,14 +80,13 @@ module solver
         
     end subroutine begin_table
     
-    subroutine solve (A, b, c, dof, errck)
+    subroutine solve (A, b, dof)
     
         implicit none
         
         double precision, dimension (:, :)    , intent (in)     :: A     ! (6*no nodes, 6*no nodes)
         double precision, dimension (:)       , intent (inout)  :: b     ! (6*no nodes)
         double precision, dimension (:)       , intent (in)     :: dof   ! (6*no nodes)
-        integer                               , intent (out)    :: errck
         
         integer :: ndof, i, info
         integer, dimension (size (dof)) :: ipiv
@@ -104,13 +103,11 @@ module solver
         
         call dgetrf (ndof, ndof, A, ndof, ipiv, info)  ! LU factorization
         if (info .ne. 0) then
-            errck = 2
             exit
         end if
         
         call dgetrs ('N', ndof, 1, tangent, ndof, ipiv, b, ndof, info)  ! solve system
         if (info .ne. 0) then
-            errck = 3
             exit
         end if
         
@@ -122,7 +119,7 @@ module solver
     ! X0 ........... initial coordinates (3, no all nodes)
     ! U ............ displacement (3, no all nodes)
     ! C ............ tangent elastic moduli (6, 6)
-    ! DOF .......... degrees of freedom (6, no all nodes)
+    ! DOF6 .......... degrees of freedom (6, no all nodes)
     ! Uload ........ prescribed displacement/rotation (6, no all nodes)
     ! Q ............ nodal load (6, no all nodes)
     ! pressure ............ distributed load (no ele, 6, no gauss)
@@ -141,7 +138,7 @@ module solver
     ! prints ....... boolean, indicating if intermediate info statements should be printed
     !
     ! modify U, rot, om, stress
-    subroutine newton_iter (ele, X0, U, C, DOF, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, prints)
+    subroutine newton_iter (ele, X0, U, C, DOF6, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, prints)
     
         implicit none
         
@@ -149,7 +146,7 @@ module solver
         double precision, dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
         double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
         double precision, dimension (6, 6), intent (in) :: C
-        logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
+        logical, dimension (:, :), intent (in) :: DOF6  ! (6, no all nodes)
         double precision, dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
         double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
         double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
@@ -168,7 +165,7 @@ module solver
         double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R, resflat
         double precision, dimension (6, size (X0 (1, :))) :: res
         integer, dimension (6 * size (X0 (1, :))) :: ipiv
-        logical, dimension (6 * size (X0 (1, :))) :: DOFflat
+        logical, dimension (6 * size (X0 (1, :))) :: dof
         double precision :: convtest
         
         external dgetrf, dgetrs
@@ -177,7 +174,7 @@ module solver
         ndof = 6 * nno
         
         res = Uload
-        DOFflat = pack (DOF, .TRUE.)
+        dof = pack (DOF6, .TRUE.)
         
         if (prints) call begin_table ('N')
         
@@ -189,17 +186,16 @@ module solver
                 tangent = assemble_tangent (ele, X0, X, rot, C, stress)  ! tangent
                 
                 do j = 1, ndof
-                    if (.NOT. DOFflat (j)) then
+                    if (.NOT. dof (j)) then
                         tangent (:, j) = 0.0D0
                         tangent (j, :) = 0.0D0
                         tangent (j, j) = 1.0D0
                     end if
                 end do
                 
-                call solve ('N', ndof, 1, tangent, ndof, ipiv, R, ndof)
+                call solve (tangent, R, dof)  ! solve the system, fill R with results
                                 
-                resflat = R
-                res = reshape (resflat, (/ 6, nno /))
+                res = reshape (R, (/ 6, nno /))
             end if
             
             dU = res (1:3, :)
@@ -207,26 +203,27 @@ module solver
             
             U = U + dU
             X = X0 + U
-                        
+            
+            if (TEST .eq. 'DSP') convtest = norm2 (R)  ! R are incremental updates
+            
             call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
             
             Fint = assemble_internal_force (ele, X0, X, stress)
             Fext = assemble_external_force (ele, X0, Q, pressure)
-            R = Fext - Fint
+            R = Fext - Fint  ! compute residual, fill R with residual forces
             
             do j = 1, ndof
-                if (.NOT. DOFflat (j)) R(j) = 0.0D0
+                if (.NOT. dof (j)) R(j) = 0.0D0
             end do
             
-            if (TEST .eq. 'RSD') convtest = norm2 (R)
-            if (TEST .eq. 'DSP') convtest = norm2 (resflat)
-            
+            if (TEST .eq. 'RSD') convtest = norm2 (R)  ! R are residual forces
+                        
             if (prints) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
             if (convtest < TOLER) exit
                         
         end do
         
-        resout = reshape (R, (/ 6, nno /))
+        resout = reshape (R, (/ 6, nno /))  ! R are residual forces
         
         if (i .eq. MAXITER) then
             if (prints) write (6, '(/, "Not converging")')
@@ -241,7 +238,7 @@ module solver
     ! X0 ........... initial coordinates (3, no all nodes)
     ! U ............ displacement (3, no all nodes)
     ! C ............ tangent elastic moduli (6, 6)
-    ! DOF .......... degrees of freedom (6, no all nodes)
+    ! DOF6 .......... degrees of freedom (6, no all nodes)
     ! Uload ........ prescribed displacement/rotation (6, no all nodes)
     ! Q ............ nodal load (6, no all nodes)
     ! pressure ............ distributed load (no ele, 6, no gauss)
@@ -254,7 +251,7 @@ module solver
     ! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
     !
     ! modify U, rot, om, stress
-    subroutine newton_iter_det (ele, X0, U, C, DOF, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, errck)
+    subroutine newton_iter_det (ele, X0, U, C, DOF6, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, errck)
     
         implicit none
         
@@ -262,7 +259,7 @@ module solver
         double precision, dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
         double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
         double precision, dimension (6, 6), intent (in) :: C
-        logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
+        logical, dimension (:, :), intent (in) :: DOF6  ! (6, no all nodes)
         double precision, dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
         double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
         double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
@@ -293,7 +290,7 @@ module solver
         
         res = Uload
         
-        DOFsel = pack (DOF, .TRUE.)
+        DOFsel = pack (DOF6, .TRUE.)
         ndof = count (DOFsel)
         allocate (K2 (ndof, ndof))
         allocate (R1 (ndof), R2 (ndof, 1), ipiv (ndof))
@@ -399,7 +396,7 @@ module solver
     ! X0 ........... initial coordinates (3, no all nodes)
     ! U ............ displacement (3, no all nodes)
     ! C ............ tangent elastic moduli (6, 6)
-    ! DOF .......... degrees of freedom (6, no all nodes)
+    ! DOF6 .......... degrees of freedom (6, no all nodes)
     ! Uload ........ prescribed displacement/rotation (6, no all nodes)
     ! Q ............ nodal load (6, no all nodes)
     ! pressure ............ distributed load (no ele, 6, no gauss)
@@ -414,7 +411,7 @@ module solver
     ! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
     !
     ! modify U, rot, om, stress
-    subroutine arc_length_iter (ele, X0, Uinc, U, C, DOF, Q, QC, pressure, rot, om, stress, resout, lambda, dS, TOLER, MAXITER, Niter, errck)
+    subroutine arc_length_iter (ele, X0, Uinc, U, C, DOF6, Q, QC, pressure, rot, om, stress, resout, lambda, dS, TOLER, MAXITER, Niter, errck)
     
         implicit none
         
@@ -423,7 +420,7 @@ module solver
         double precision, dimension (:), intent (inout) :: Uinc  ! (3 * no all nodes)
         double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
         double precision, dimension (6, 6), intent (in) :: C
-        logical, dimension (:, :), intent (in) :: DOF  ! (6, no all nodes)
+        logical, dimension (:, :), intent (in) :: DOF6  ! (6, no all nodes)
         double precision, dimension (:, :), intent (in) :: Q, QC  ! (6, no all nodes)
         double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
         double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
@@ -457,7 +454,7 @@ module solver
         nno = size (X0 (1, :))
                 
         X = X0 + U
-        DOFsel = pack (DOF, .TRUE.)
+        DOFsel = pack (DOF6, .TRUE.)
         ndof = count (DOFsel)
         allocate (K2 (ndof, ndof))
         allocate (R2 (ndof, 2), ipiv (ndof))
