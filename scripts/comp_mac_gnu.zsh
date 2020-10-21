@@ -10,8 +10,8 @@ for file in lapack/lapack_routine/*.f(:t:r); do
 done
 
 # Build FEANBEAM modules
-for file in source/*.f90(:t:r); do
-  gfortran -c source/$file.f90 -Jlib -o lib/$file.o
+for file in src/*.f90(:t:r); do
+  gfortran -c src/$file.f90 -Jlib -o lib/$file.o
 done
 
 echo "Finished compiling libraries"

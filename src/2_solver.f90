@@ -22,7 +22,7 @@ module solver
     
     private
     
-    public :: newton_iter, newton_iter_det, arc_length_iter
+    public :: newton_iter!, newton_iter_det, arc_length_iter
     
     contains
     
@@ -84,9 +84,9 @@ module solver
     
         implicit none
         
-        double precision, dimension (:, :)    , intent (in)     :: A     ! (6*no nodes, 6*no nodes)
+        double precision, dimension (:, :)                      :: A     ! (6*no nodes, 6*no nodes)
         double precision, dimension (:, :)    , intent (inout)  :: b     ! (6, no nodes)
-        double precision, dimension (:)       , intent (in)     :: dof   ! (6*no nodes)
+        logical         , dimension (:)       , intent (in)     :: dof   ! (6*no nodes)
         
         integer :: ndof, i, info
         integer, dimension (size (dof)) :: ipiv
@@ -99,20 +99,20 @@ module solver
         
         do i = 1, ndof
             if (.NOT. dof (i)) then
-                tangent (:, i) = 0.0D0
-                tangent (i, :) = 0.0D0
-                tangent (i, i) = 1.0D0
+                A (:, i) = 0.0D0
+                A (i, :) = 0.0D0
+                A (i, i) = 1.0D0
             end if
         end do
         
         call dgetrf (ndof, ndof, A, ndof, ipiv, info)  ! LU factorization
         if (info .ne. 0) then
-            exit
+            stop
         end if
         
-        call dgetrs ('N', ndof, 1, tangent, ndof, ipiv, bflat, ndof, info)  ! solve system
+        call dgetrs ('N', ndof, 1, A, ndof, ipiv, bflat, ndof, info)  ! solve system
         if (info .ne. 0) then
-            exit
+            stop
         end if
         
         b = reshape (bflat, (/ 6, size (b (1,:)) /))
@@ -125,26 +125,21 @@ module solver
     ! X0 ........... initial coordinates (3, no all nodes)
     ! U ............ displacement (3, no all nodes)
     ! C ............ tangent elastic moduli (6, 6)
-    ! DOF6 .......... degrees of freedom (6, no all nodes)
+    ! DOF6 ......... degrees of freedom (6, no all nodes)
     ! Uload ........ prescribed displacement/rotation (6, no all nodes)
-    ! Q ............ nodal load (6, no all nodes)
-    ! pressure ............ distributed load (no ele, 6, no gauss)
+    ! Q ............ nodal force load (6, no all nodes)
+    ! pressure ..... distributed load (no ele, 6, no gauss)
     ! rot .......... rotations in gauss points (no ele, no gauss, 3, 3)
     ! om ........... curvature vector (no ele, 3, no gauss)
-    ! stress ............ internal force vector (no ele, 3, no gauss)
-    ! resout ....... residual vector (6, no all nodes)
+    ! stress ....... internal force vector (no ele, 3, no gauss)
     ! TOLER ........ tolerance for convergence
     ! MAXITER ...... maximum no of iterations
     ! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
     ! Niter ........ integer, number of iterations used to converge
-    ! errck ........ integer, indication of error:
-    !                    0 = no error
-    !                    2 = LU Factorization error (dgetrf)
-    !                    3 = Solver error (dgetrs)
     ! prints ....... boolean, indicating if intermediate info statements should be printed
     !
     ! modify U, rot, om, stress
-    subroutine newton_iter (ele, X0, U, C, DOF6, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, prints)
+    subroutine newton_iter (ele, X0, U, C, DOF6, Uload, Q, pressure, rot, om, stress, R, TOLER, MAXITER, TEST, Niter, prints)
     
         implicit none
         
@@ -158,7 +153,7 @@ module solver
         double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
         double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
         double precision, dimension (:, :, :), intent (inout) :: stress  ! (no ele, 6, no gauss)
-        double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
+        double precision, dimension (:, :), intent (out) :: R  ! (6, no all nodes)
         double precision, intent (in) :: TOLER
         integer, intent (in) :: MAXITER
         character (len = 3), intent (in) :: TEST
@@ -168,14 +163,14 @@ module solver
         integer :: nno, ndof, i, j, k, info
         double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
         double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth
-        double precision, dimension (6, size (X0 (1, :))) :: Fint, Fext, R
+        double precision, dimension (6, size (X0 (1, :))) :: Fint, Fext
         logical, dimension (6 * size (X0 (1, :))) :: dof
         double precision :: convtest
         
         nno = size (X0 (1, :))
         ndof = 6 * nno
         
-        res = Uload
+        R = Uload  ! fill R with displacement load
         dof = pack (DOF6, .TRUE.)
         
         if (prints) call begin_table ('N')
@@ -199,8 +194,8 @@ module solver
                 
             end if
             
-            dU = res (1:3, :)
-            dth = res (4:6, :)
+            dU = R (1:3, :)  ! divide displacements and rotations
+            dth = R (4:6, :)
             
             U = U + dU
             X = X0 + U
@@ -213,15 +208,17 @@ module solver
             Fext = assemble_external_force (ele, X0, Q, pressure)
             R = Fext - Fint  ! compute residual, fill R with residual forces
             
-            do j = 1, ndof
-                if (.NOT. dof (j)) R(j) = 0.0D0
+            do j = 1, 6
+                do k = 1, nno
+                    if (.NOT. DOF6 (j, k)) R(j, k) = 0.0D0
+                end do
             end do
             
             if (TEST .eq. 'RSD') convtest = norm2 (R)  ! R are residual forces
                         
             if (prints) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
             if (convtest < TOLER) exit
-                        
+            
         end do
                 
         if (i .eq. MAXITER) then
@@ -250,123 +247,123 @@ module solver
     ! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
     !
     ! modify U, rot, om, stress
-    subroutine newton_iter_det_legacy (ele, X0, U, C, DOF6, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, errck)
+    ! subroutine newton_iter_det_legacy (ele, X0, U, C, DOF6, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, errck)
     
-        implicit none
+        ! implicit none
         
-        integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
-        double precision, dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
-        double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
-        double precision, dimension (6, 6), intent (in) :: C
-        logical, dimension (:, :), intent (in) :: DOF6  ! (6, no all nodes)
-        double precision, dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
-        double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
-        double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
-        double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-        double precision, dimension (:, :, :), intent (inout) :: stress  ! (no ele, 6, no gauss)
-        double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
-        double precision, intent (in) :: TOLER
-        integer, intent (in) :: MAXITER
-        character (len = 3), intent (in) :: TEST
-        integer, intent (out) :: Niter
-        integer, intent (out) :: errck
+        ! integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
+        ! double precision, dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
+        ! double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
+        ! double precision, dimension (6, 6), intent (in) :: C
+        ! logical, dimension (:, :), intent (in) :: DOF6  ! (6, no all nodes)
+        ! double precision, dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
+        ! double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
+        ! double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
+        ! double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
+        ! double precision, dimension (:, :, :), intent (inout) :: stress  ! (no ele, 6, no gauss)
+        ! double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
+        ! double precision, intent (in) :: TOLER
+        ! integer, intent (in) :: MAXITER
+        ! character (len = 3), intent (in) :: TEST
+        ! integer, intent (out) :: Niter
+        ! integer, intent (out) :: errck
         
-        integer :: nno, ndof, i, j, info
-        logical, dimension (6 * size (X0 (1, :))) :: DOFsel
-        double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
-        double precision, allocatable :: K2 (:, :)
-        double precision, dimension (6, size (X0 (1, :))) :: res
-        double precision, dimension (6 * size (X0 (1, :))) :: res2
-        double precision, allocatable :: R1 (:), R2 (:, :)
-        double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth
-        double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
-        integer, allocatable :: ipiv (:)
-        double precision :: convtest, tandet
+        ! integer :: nno, ndof, i, j, info
+        ! logical, dimension (6 * size (X0 (1, :))) :: DOFsel
+        ! double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
+        ! double precision, allocatable :: K2 (:, :)
+        ! double precision, dimension (6, size (X0 (1, :))) :: res
+        ! double precision, dimension (6 * size (X0 (1, :))) :: res2
+        ! double precision, allocatable :: R1 (:), R2 (:, :)
+        ! double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth
+        ! double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
+        ! integer, allocatable :: ipiv (:)
+        ! double precision :: convtest, tandet
         
-        errck = 0.0D0
+        ! errck = 0.0D0
         
-        nno = size (X0 (1, :))
+        ! nno = size (X0 (1, :))
         
-        res = Uload
+        ! res = Uload
         
-        DOFsel = pack (DOF6, .TRUE.)
-        ndof = count (DOFsel)
-        allocate (K2 (ndof, ndof))
-        allocate (R1 (ndof), R2 (ndof, 1), ipiv (ndof))
+        ! DOFsel = pack (DOF6, .TRUE.)
+        ! ndof = count (DOFsel)
+        ! allocate (K2 (ndof, ndof))
+        ! allocate (R1 (ndof), R2 (ndof, 1), ipiv (ndof))
         
-        call begin_table ('N')
+        ! call begin_table ('N')
         
-        do i = 0, MAXITER-1
+        ! do i = 0, MAXITER-1
             
-            Niter = i + 1
+            ! Niter = i + 1
             
-            if (i > 0) then
-                res = 0.0D0
-                tangent = assemble_tangent (ele, X0, X, rot, C, stress)  ! tangent
+            ! if (i > 0) then
+                ! res = 0.0D0
+                ! tangent = assemble_tangent (ele, X0, X, rot, C, stress)  ! tangent
                 
-                call pack2 (tangent, DOFsel, K2)
+                ! call pack2 (tangent, DOFsel, K2)
                 
-                call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
-                if (info .ne. 0) then
-                    errck = 2
-                    exit
-                end if  
+                ! call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
+                ! if (info .ne. 0) then
+                    ! errck = 2
+                    ! exit
+                ! end if  
                 
-                tandet = 1.0D0
-                do j = 1, ndof  ! compute sign of determinant
-                    tandet = K2 (j, j) / abs (K2 (j, j)) * tandet
-                    if (j .ne. ipiv (j)) then
-                        tandet = -1 * tandet
-                    end if
-                end do
+                ! tandet = 1.0D0
+                ! do j = 1, ndof  ! compute sign of determinant
+                    ! tandet = K2 (j, j) / abs (K2 (j, j)) * tandet
+                    ! if (j .ne. ipiv (j)) then
+                        ! tandet = -1 * tandet
+                    ! end if
+                ! end do
                 
-                write (6, '("Sign of determinant:", X, F5.1)') tandet
+                ! write (6, '("Sign of determinant:", X, F5.1)') tandet
                                 
-                call dgetrs ('N', ndof, 1, K2, ndof, ipiv, R2, ndof, info)  ! solve system
-                if (info .ne. 0) then
-                    errck = 3
-                    exit
-                end if  
+                ! call dgetrs ('N', ndof, 1, K2, ndof, ipiv, R2, ndof, info)  ! solve system
+                ! if (info .ne. 0) then
+                    ! errck = 3
+                    ! exit
+                ! end if  
                 
-                res2 = 0.0D0
-                call logicwrite (R2 (:, 1), DOFsel, res2)
-                res = reshape (res2, (/ 6, nno /))
+                ! res2 = 0.0D0
+                ! call logicwrite (R2 (:, 1), DOFsel, res2)
+                ! res = reshape (res2, (/ 6, nno /))
                 
-            end if
+            ! end if
             
-            do concurrent (j = 1:3)
-                dU (j, :) = res (j, :) 
-                dth (j, :) = res (j + 3, :)
-            end do
+            ! do concurrent (j = 1:3)
+                ! dU (j, :) = res (j, :) 
+                ! dth (j, :) = res (j + 3, :)
+            ! end do
             
-            U = U + dU
-            X = X0 + U
+            ! U = U + dU
+            ! X = X0 + U
             
-            call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
+            ! call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
             
-            Fint = assemble_external_force (ele, X0, X, stress)
-            Fext = assemble_internal_force (ele, X0, Q, pressure)
-            R = Fint - Fext
-            R1 = pack (R, DOFsel)
+            ! Fint = assemble_external_force (ele, X0, X, stress)
+            ! Fext = assemble_internal_force (ele, X0, Q, pressure)
+            ! R = Fint - Fext
+            ! R1 = pack (R, DOFsel)
             
-            if (TEST .eq. 'RSD') convtest = norm2 (R1)
-            if (TEST .eq. 'DSP') convtest = norm2 (R2)
+            ! if (TEST .eq. 'RSD') convtest = norm2 (R1)
+            ! if (TEST .eq. 'DSP') convtest = norm2 (R2)
             
-            write (6, '(I4, X, "|", X, ES20.13)') i, convtest
-            if (convtest < TOLER) exit
+            ! write (6, '(I4, X, "|", X, ES20.13)') i, convtest
+            ! if (convtest < TOLER) exit
             
-            R2 (:, 1) = -R1  ! invert and verticalize residual
+            ! R2 (:, 1) = -R1  ! invert and verticalize residual
                         
-        end do
+        ! end do
         
-        resout = reshape (R, (/ 6, nno /))
+        ! resout = reshape (R, (/ 6, nno /))
         
-        if (i .eq. MAXITER) then
-            write (6, '(/, "Not converging")')
-            stop
-        end if
+        ! if (i .eq. MAXITER) then
+            ! write (6, '(/, "Not converging")')
+            ! stop
+        ! end if
         
-    end subroutine newton_iter_det
+    ! end subroutine newton_iter_det
     
     recursive function det_rosetta ( mat, n ) result( accum )
         integer :: n
@@ -410,155 +407,155 @@ module solver
     ! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
     !
     ! modify U, rot, om, stress
-    subroutine arc_length_iter_legacy (ele, X0, Uinc, U, C, DOF6, Q, QC, pressure, rot, om, stress, resout, lambda, dS, TOLER, MAXITER, Niter, errck)
+    ! subroutine arc_length_iter_legacy (ele, X0, Uinc, U, C, DOF6, Q, QC, pressure, rot, om, stress, resout, lambda, dS, TOLER, MAXITER, Niter, errck)
     
-        implicit none
+        ! implicit none
         
-        integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
-        double precision, dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
-        double precision, dimension (:), intent (inout) :: Uinc  ! (3 * no all nodes)
-        double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
-        double precision, dimension (6, 6), intent (in) :: C
-        logical, dimension (:, :), intent (in) :: DOF6  ! (6, no all nodes)
-        double precision, dimension (:, :), intent (in) :: Q, QC  ! (6, no all nodes)
-        double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
-        double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
-        double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-        double precision, dimension (:, :, :), intent (inout) :: stress  ! (no ele, 6, no gauss)
-        double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
-        double precision, intent (inout) :: lambda
-        double precision, intent (in) :: dS
-        double precision, intent (in) :: TOLER
-        integer, intent (in) :: MAXITER
-        integer, intent (out) :: Niter
-        integer, intent (out) :: errck
+        ! integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
+        ! double precision, dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
+        ! double precision, dimension (:), intent (inout) :: Uinc  ! (3 * no all nodes)
+        ! double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
+        ! double precision, dimension (6, 6), intent (in) :: C
+        ! logical, dimension (:, :), intent (in) :: DOF6  ! (6, no all nodes)
+        ! double precision, dimension (:, :), intent (in) :: Q, QC  ! (6, no all nodes)
+        ! double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
+        ! double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
+        ! double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
+        ! double precision, dimension (:, :, :), intent (inout) :: stress  ! (no ele, 6, no gauss)
+        ! double precision, dimension (:, :), intent (out) :: resout  ! (6, no all nodes)
+        ! double precision, intent (inout) :: lambda
+        ! double precision, intent (in) :: dS
+        ! double precision, intent (in) :: TOLER
+        ! integer, intent (in) :: MAXITER
+        ! integer, intent (out) :: Niter
+        ! integer, intent (out) :: errck
         
-        integer :: nno, ndof, i, j, info
-        logical, dimension (6 * size (X0 (1, :))) :: DOFsel
-        double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
-        double precision, allocatable :: K2 (:, :)
-        double precision, dimension (6 * size (X0 (1, :))) :: res2F, res2R
-        double precision, dimension (6, size (X0 (1, :))) :: resF, resR
-        double precision, allocatable :: R2 (:, :)
-        double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth, U0, dUF, dUR, thF, thR
-        double precision, dimension (3 * size (X0 (1, :))) :: dUFflat, dURflat
-        double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, FC, R
-        integer, allocatable :: ipiv (:)
-        double precision :: convtest, dlambda, dlambda1, dlambda2, discriminant, UincdotdUF, sig, a1, a2, a3
-        double precision, dimension (2) :: dlambda_test
-        integer, dimension (1) :: dlambda_test_res
+        ! integer :: nno, ndof, i, j, info
+        ! logical, dimension (6 * size (X0 (1, :))) :: DOFsel
+        ! double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
+        ! double precision, allocatable :: K2 (:, :)
+        ! double precision, dimension (6 * size (X0 (1, :))) :: res2F, res2R
+        ! double precision, dimension (6, size (X0 (1, :))) :: resF, resR
+        ! double precision, allocatable :: R2 (:, :)
+        ! double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth, U0, dUF, dUR, thF, thR
+        ! double precision, dimension (3 * size (X0 (1, :))) :: dUFflat, dURflat
+        ! double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, FC, R
+        ! integer, allocatable :: ipiv (:)
+        ! double precision :: convtest, dlambda, dlambda1, dlambda2, discriminant, UincdotdUF, sig, a1, a2, a3
+        ! double precision, dimension (2) :: dlambda_test
+        ! integer, dimension (1) :: dlambda_test_res
         
-        errck = 0
+        ! errck = 0
         
-        nno = size (X0 (1, :))
+        ! nno = size (X0 (1, :))
                 
-        X = X0 + U
-        DOFsel = pack (DOF6, .TRUE.)
-        ndof = count (DOFsel)
-        allocate (K2 (ndof, ndof))
-        allocate (R2 (ndof, 2), ipiv (ndof))
+        ! X = X0 + U
+        ! DOFsel = pack (DOF6, .TRUE.)
+        ! ndof = count (DOFsel)
+        ! allocate (K2 (ndof, ndof))
+        ! allocate (R2 (ndof, 2), ipiv (ndof))
         
-        Fint = assemble_external_force (ele, X0, X, stress)
-        Fext = assemble_internal_force (ele, X0, Q, pressure)
-        FC = assemble_internal_force (ele, X0, QC, pressure)
-        R = Fint - lambda * Fext - FC
-        R2 (:, 1) = pack (Fext, DOFsel)
-        R2 (:, 2) = pack (-R, DOFsel)
+        ! Fint = assemble_external_force (ele, X0, X, stress)
+        ! Fext = assemble_internal_force (ele, X0, Q, pressure)
+        ! FC = assemble_internal_force (ele, X0, QC, pressure)
+        ! R = Fint - lambda * Fext - FC
+        ! R2 (:, 1) = pack (Fext, DOFsel)
+        ! R2 (:, 2) = pack (-R, DOFsel)
         
-        call begin_table ('A')
-        write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F14.10)') 0, norm2 (R), lambda
+        ! call begin_table ('A')
+        ! write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F14.10)') 0, norm2 (R), lambda
         
-        do i = 1, MAXITER
+        ! do i = 1, MAXITER
             
-            Niter = i
+            ! Niter = i
         
-            res2F = 0.0D0
-            res2R = 0.0D0
+            ! res2F = 0.0D0
+            ! res2R = 0.0D0
             
-            tangent = assemble_tangent (ele, X0, X, rot, C, stress)  ! tangent
-            call pack2 (tangent, DOFsel, K2)
+            ! tangent = assemble_tangent (ele, X0, X, rot, C, stress)  ! tangent
+            ! call pack2 (tangent, DOFsel, K2)
             
-            call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
-            if (info .ne. 0) then
-                errck = 2
-                exit
-            end if          
+            ! call dgetrf (ndof, ndof, K2, ndof, ipiv, info)  ! LU factorization
+            ! if (info .ne. 0) then
+                ! errck = 2
+                ! exit
+            ! end if          
             
-            call dgetrs ('N', ndof, 2, K2, ndof, ipiv, R2, ndof, info)  ! solve system
-            if (info .ne. 0) then
-                errck = 3
-                exit
-            end if
+            ! call dgetrs ('N', ndof, 2, K2, ndof, ipiv, R2, ndof, info)  ! solve system
+            ! if (info .ne. 0) then
+                ! errck = 3
+                ! exit
+            ! end if
             
-            call logicwrite (R2 (:, 1), DOFsel, res2F)
-            call logicwrite (R2 (:, 2), DOFsel, res2R)
-            resF = reshape (res2F, (/ 6, nno /))
-            resR = reshape (res2R, (/ 6, nno /))
+            ! call logicwrite (R2 (:, 1), DOFsel, res2F)
+            ! call logicwrite (R2 (:, 2), DOFsel, res2R)
+            ! resF = reshape (res2F, (/ 6, nno /))
+            ! resR = reshape (res2R, (/ 6, nno /))
             
-            do concurrent (j = 1:3)
-                dUF (j, :) = resF (j, :)
-                thF (j, :) = resF (j + 3, :)
-                dUR (j, :) = resR (j, :)
-                thR (j, :) = resR (j + 3, :)
-            end do
+            ! do concurrent (j = 1:3)
+                ! dUF (j, :) = resF (j, :)
+                ! thF (j, :) = resF (j + 3, :)
+                ! dUR (j, :) = resR (j, :)
+                ! thR (j, :) = resR (j + 3, :)
+            ! end do
             
-            dUFflat = pack (dUF, .TRUE.)
-            dURflat = pack (dUR, .TRUE.)
+            ! dUFflat = pack (dUF, .TRUE.)
+            ! dURflat = pack (dUR, .TRUE.)
             
-            a1 = dot_product (dUFflat, dUFflat)
-            if (i .eq. 1) then
-                UincdotdUF = dot_product (Uinc, dUFflat)
-                dlambda = sign (dS / sqrt (a1), UincdotdUF)
-                Uinc = 0.0D0
-            else
-                a2 = 2 * dot_product(Uinc + dURflat, dUFflat)
-                a3 = dot_product (Uinc + dURflat, Uinc + dURflat) - dS ** 2
+            ! a1 = dot_product (dUFflat, dUFflat)
+            ! if (i .eq. 1) then
+                ! UincdotdUF = dot_product (Uinc, dUFflat)
+                ! dlambda = sign (dS / sqrt (a1), UincdotdUF)
+                ! Uinc = 0.0D0
+            ! else
+                ! a2 = 2 * dot_product(Uinc + dURflat, dUFflat)
+                ! a3 = dot_product (Uinc + dURflat, Uinc + dURflat) - dS ** 2
                 
-                if (a2 ** 2 - 4 * a1 * a3 < 0) then
-                    errck = 1
-                    exit
-                end if
+                ! if (a2 ** 2 - 4 * a1 * a3 < 0) then
+                    ! errck = 1
+                    ! exit
+                ! end if
                 
-                discriminant = sqrt (a2 ** 2 - 4 * a1 * a3)
-                dlambda1 = (-a2 - discriminant) / (2 * a1)
-                dlambda2 = (-a2 + discriminant) / (2 * a1)
+                ! discriminant = sqrt (a2 ** 2 - 4 * a1 * a3)
+                ! dlambda1 = (-a2 - discriminant) / (2 * a1)
+                ! dlambda2 = (-a2 + discriminant) / (2 * a1)
                 
-                dlambda_test = (/ &
-                    dot_product (Uinc + dURflat + dlambda1 * dUFflat, Uinc), &
-                    dot_product (Uinc + dURflat + dlambda2 * dUFflat, Uinc) &
-                /)
-                dlambda_test_res = maxloc (dlambda_test)
-                if (dlambda_test_res (1) .eq. 1) then
-                    dlambda = dlambda1
-                else
-                    dlambda = dlambda2
-                end if
-            end if
+                ! dlambda_test = (/ &
+                    ! dot_product (Uinc + dURflat + dlambda1 * dUFflat, Uinc), &
+                    ! dot_product (Uinc + dURflat + dlambda2 * dUFflat, Uinc) &
+                ! /)
+                ! dlambda_test_res = maxloc (dlambda_test)
+                ! if (dlambda_test_res (1) .eq. 1) then
+                    ! dlambda = dlambda1
+                ! else
+                    ! dlambda = dlambda2
+                ! end if
+            ! end if
             
-            lambda = lambda + dlambda
-            Uinc = Uinc + dURflat + dlambda * dUFflat
-            U = U + dUR + dlambda * dUF
-            X = X0 + U
-            dth = thR + dlambda * thF
-            call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
-            Fint = assemble_external_force (ele, X0, X, stress)
-            R = Fint - lambda * Fext - FC
-            R2 (:, 1) = pack (Fext, DOFsel)
-            R2 (:, 2) = pack (-R, DOFsel)
-            convtest = norm2 (R2 (:, 2)) / norm2 (R2 (:, 1))
-            write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F15.11)') i, convtest, lambda
-            if (convtest < TOLER) exit
+            ! lambda = lambda + dlambda
+            ! Uinc = Uinc + dURflat + dlambda * dUFflat
+            ! U = U + dUR + dlambda * dUF
+            ! X = X0 + U
+            ! dth = thR + dlambda * thF
+            ! call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
+            ! Fint = assemble_external_force (ele, X0, X, stress)
+            ! R = Fint - lambda * Fext - FC
+            ! R2 (:, 1) = pack (Fext, DOFsel)
+            ! R2 (:, 2) = pack (-R, DOFsel)
+            ! convtest = norm2 (R2 (:, 2)) / norm2 (R2 (:, 1))
+            ! write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F15.11)') i, convtest, lambda
+            ! if (convtest < TOLER) exit
             
-        end do
+        ! end do
         
-        resout = reshape (R, (/ 6, nno /))
+        ! resout = reshape (R, (/ 6, nno /))
         
-        if (i .eq. MAXITER + 1) then
-            write (6, '(/, "Not converging")')
-            stop
-        end if
+        ! if (i .eq. MAXITER + 1) then
+            ! write (6, '(/, "Not converging")')
+            ! stop
+        ! end if
         
-    end subroutine arc_length_iter
+    ! end subroutine arc_length_iter
     
     
 end module

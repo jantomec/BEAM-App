@@ -13,11 +13,11 @@ do
 done
 
 # Build FEANBEAM modules
-for file in source/*.f90
+for file in src/*.f90
 do
   fname="${file##*/}"
   name="${fname%.f90}"
-  gfortran -c source/$name.f90 -Jlib -o lib/$name.o
+  gfortran -c src/$name.f90 -Jlib -o lib/$name.o
 done
 
 echo "Finished compiling libraries"

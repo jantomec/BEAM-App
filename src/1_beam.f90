@@ -22,7 +22,7 @@ module beam
 	
 	private
 	
-	public :: assemble_external_force, assemble_internal_force, update_stress_strain
+	public :: assemble_tangent, assemble_external_force, assemble_internal_force, update_stress_strain
 	
 	contains
 	
@@ -357,7 +357,7 @@ module beam
 		integer :: nno, nele, neno, e, i, j, ei, ej
 		integer, dimension (size (ele (1, :))) :: indices  ! (no nodes on ele)
 		double precision, dimension (6 * size (ele (1, :)), 6 * size (ele (1, :))) :: Ke  ! (6*no nodes on ele, 
-                                                                                           !  6*no nodes on ele)
+                                                                                          !  6*no nodes on ele)
         
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
@@ -383,7 +383,7 @@ module beam
 	end function assemble_tangent
 	
 	! compute global internal force vector
-	function assemble_internal_force (ele, X0, X, stress) return (Fint)
+	function assemble_internal_force (ele, X0, X, stress) result (Fint)
 	
 		implicit none
 		
@@ -393,7 +393,7 @@ module beam
 		double precision, dimension (6, size (X (1, :))) :: Fint  ! (6, no nodes)
 		integer :: nno, nele, neno, j, i, ei
 		integer, dimension (size (ele (1, :))) :: indices
-		double precision, dimension (6, size (ele (1, :))) :: Fj
+		double precision, dimension (6, size (ele (1, :))) :: Fj  ! (6, no nodes on ele)
 		
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
@@ -410,10 +410,10 @@ module beam
 			end do
 		end do
 	
-	end function Fint
+	end function assemble_internal_force
 	
 	! compute global external force vector
-	function assemble_external_force (ele, X0, Q, pressure) return (Fext)
+	function assemble_external_force (ele, X0, Q, pressure) result (Fext)
 	
 		implicit none
 		
@@ -443,7 +443,7 @@ module beam
 		
 		Fext = Fext + Q
 	
-	end function Fext
+	end function assemble_external_force
 	
 	! compute global external force vector
 	subroutine update_stress_strain (ele, X0, X, th, C, rot, om, stress)
@@ -470,7 +470,7 @@ module beam
 			)
 		end do
 		
-	end subroutine curv
+	end subroutine update_stress_strain
 	
 	
 end module

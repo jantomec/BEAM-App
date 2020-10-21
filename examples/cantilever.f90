@@ -15,7 +15,7 @@ program cantilever
 	integer, parameter :: MAXITER = 20
 	double precision, parameter :: TOLER = 1D-10
 	double precision, dimension (6), parameter :: material = (/ 1.0D0, 1.0D0, 1.0D0, 1.0D0, 2.0D0, 1.0D0 /)
-	character (len = *), parameter :: folder = 'cantilever'
+	character (len = *), parameter :: folder = 'cantilever-results'
 	character (len = *), parameter :: fname_format = '("step", I0.3, ".dat")'
 	
 	type (ElementMesh) :: mesh
@@ -23,7 +23,7 @@ program cantilever
 	double precision, dimension (3, Nno) :: X, U
 	double precision, dimension (6, 6) :: C
 	logical, dimension (6, Nno) :: DOF
-	double precision, dimension (6, Nno) :: dU, Q
+	double precision, dimension (6, Nno) :: Uload, Q
 	double precision, dimension (Nele, 6, Ngauss) :: p, f
 	double precision, dimension (Nele, 3, Ngauss) :: om
 	double precision, dimension (Nele, Ngauss, 3, 3) :: rot
@@ -78,7 +78,7 @@ program cantilever
 	! BOUNDARY CONDITIONS
 	DOF = .TRUE.
 	DOF (:, 1) = .FALSE.
-	dU = 0.0D0
+	Uload = 0.0D0
 	Q = 0.0D0
 	
 	! =================================================
@@ -88,7 +88,7 @@ program cantilever
 			if (j > 0) then
 				write (6, '(/, "Step", X, I3)') j
 				Q (5, Nno) = Q (5, Nno) + Q0 / nsteps (1)
-				call newton_iter (mesh%ele, mesh%X0, U, C, DOF, dU, Q, p, rot, om, f, R, TOLER, MAXITER, 'RSD', Niter, info, .TRUE.)
+				call newton_iter (mesh%ele, mesh%X0, U, C, DOF, Uload, Q, p, rot, om, f, R, TOLER, MAXITER, 'RSD', Niter, .TRUE.)
 			end if
 			
 			X (1, :) = mesh%X0 (1, :) + U (1, :)
