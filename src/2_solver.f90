@@ -162,9 +162,8 @@ module solver
         integer :: nno, ndof, i, j, k, info
         double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
         double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth
-        double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R, resflat
+        double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
         double precision, dimension (6, size (X0 (1, :))) :: res
-        integer, dimension (6 * size (X0 (1, :))) :: ipiv
         logical, dimension (6 * size (X0 (1, :))) :: dof
         double precision :: convtest
         
@@ -251,7 +250,7 @@ module solver
     ! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
     !
     ! modify U, rot, om, stress
-    subroutine newton_iter_det (ele, X0, U, C, DOF6, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, errck)
+    subroutine newton_iter_det_legacy (ele, X0, U, C, DOF6, Uload, Q, pressure, rot, om, stress, resout, TOLER, MAXITER, TEST, Niter, errck)
     
         implicit none
         
@@ -411,7 +410,7 @@ module solver
     ! TEST ......... convergence test ('RSD' - resdidual, 'DSP' - displacement)
     !
     ! modify U, rot, om, stress
-    subroutine arc_length_iter (ele, X0, Uinc, U, C, DOF6, Q, QC, pressure, rot, om, stress, resout, lambda, dS, TOLER, MAXITER, Niter, errck)
+    subroutine arc_length_iter_legacy (ele, X0, Uinc, U, C, DOF6, Q, QC, pressure, rot, om, stress, resout, lambda, dS, TOLER, MAXITER, Niter, errck)
     
         implicit none
         
