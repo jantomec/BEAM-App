@@ -325,8 +325,8 @@ module solver
 			
 			call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
 			
-			Fint = Fintg (ele, X0, X, stress)
-			Fext = Fextg (ele, X0, Q, pressure)
+			Fint = assemble_external_force (ele, X0, X, stress)
+			Fext = assemble_internal_force (ele, X0, Q, pressure)
 			R = Fint - Fext
 			R1 = pack (R, DOFsel)
 			
@@ -439,9 +439,9 @@ module solver
 		allocate (K2 (ndof, ndof))
 		allocate (R2 (ndof, 2), ipiv (ndof))
 		
-		Fint = Fintg (ele, X0, X, stress)
-		Fext = Fextg (ele, X0, Q, pressure)
-		FC = Fextg (ele, X0, QC, pressure)
+		Fint = assemble_external_force (ele, X0, X, stress)
+		Fext = assemble_internal_force (ele, X0, Q, pressure)
+		FC = assemble_internal_force (ele, X0, QC, pressure)
 		R = Fint - lambda * Fext - FC
 		R2 (:, 1) = pack (Fext, DOFsel)
 		R2 (:, 2) = pack (-R, DOFsel)
@@ -522,7 +522,7 @@ module solver
 			X = X0 + U
 			dth = thR + dlambda * thF
 			call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
-			Fint = Fintg (ele, X0, X, stress)
+			Fint = assemble_external_force (ele, X0, X, stress)
 			R = Fint - lambda * Fext - FC
 			R2 (:, 1) = pack (Fext, DOFsel)
 			R2 (:, 2) = pack (-R, DOFsel)
