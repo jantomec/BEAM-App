@@ -85,13 +85,15 @@ module solver
         implicit none
         
         double precision, dimension (:, :)    , intent (in)     :: A     ! (6*no nodes, 6*no nodes)
-        double precision, dimension (:)       , intent (inout)  :: b     ! (6*no nodes)
+        double precision, dimension (:, :)    , intent (inout)  :: b     ! (6, no nodes)
         double precision, dimension (:)       , intent (in)     :: dof   ! (6*no nodes)
         
         integer :: ndof, i, info
         integer, dimension (size (dof)) :: ipiv
+        double precision, dimension (size (dof)) :: bflat
         
         ndof = size (dof)
+        bflat = pack (b, .TRUE.)
         
         do i = 1, ndof
             if (.NOT. dof (i)) then
@@ -106,10 +108,12 @@ module solver
             exit
         end if
         
-        call dgetrs ('N', ndof, 1, tangent, ndof, ipiv, b, ndof, info)  ! solve system
+        call dgetrs ('N', ndof, 1, tangent, ndof, ipiv, bflat, ndof, info)  ! solve system
         if (info .ne. 0) then
             exit
         end if
+        
+        b = reshape (bflat, (/ 6, size (b (1,:)) /))
         
     end subroutine solve
     
@@ -162,8 +166,7 @@ module solver
         integer :: nno, ndof, i, j, k, info
         double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
         double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth
-        double precision, dimension (6 * size (X0 (1, :))) :: Fint, Fext, R
-        double precision, dimension (6, size (X0 (1, :))) :: res
+        double precision, dimension (6, size (X0 (1, :))) :: Fint, Fext, R
         logical, dimension (6 * size (X0 (1, :))) :: dof
         double precision :: convtest
         
@@ -193,8 +196,7 @@ module solver
                 end do
                 
                 call solve (tangent, R, dof)  ! solve the system, fill R with results
-                                
-                res = reshape (R, (/ 6, nno /))
+                
             end if
             
             dU = res (1:3, :)
@@ -221,9 +223,7 @@ module solver
             if (convtest < TOLER) exit
                         
         end do
-        
-        resout = reshape (R, (/ 6, nno /))  ! R are residual forces
-        
+                
         if (i .eq. MAXITER) then
             if (prints) write (6, '(/, "Not converging")')
             stop

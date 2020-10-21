@@ -355,7 +355,7 @@ module beam
 		double precision, dimension (:, :, :), intent (in) :: stress  ! (no ele, 6, no gauss)
 		double precision, dimension (6 * size (X (1, :)), 6 * size (X (1, :))) :: Kg  ! (6*no nodes, 6*no nodes)
 		integer :: nno, nele, neno, e, i, j, ei, ej
-		integer, dimension (size (ele (1, :))) :: ee  ! (no nodes on ele)
+		integer, dimension (size (ele (1, :))) :: indices  ! (no nodes on ele)
 		double precision, dimension (6 * size (ele (1, :)), 6 * size (ele (1, :))) :: Ke  ! (6*no nodes on ele, 
                                                                                            !  6*no nodes on ele)
         
@@ -365,14 +365,14 @@ module beam
 		Kg = 0.0D0
 		
 		do e = 1, nele
-			ee = ele (e, :)
-			neno = size (ee)
-			Ke = material_stiffness (X0 (:, ee), X (:, ee), rot (e, :, :, :), C) &
-				+ geometrical_stiffness (X0 (:, ee), X (:, ee), rot (e, :, :, :), stress (e, :, :))
+			indices = ele (e, :)
+			neno = size (indices)
+			Ke = material_stiffness (X0 (:, indices), X (:, indices), rot (e, :, :, :), C) &
+				+ geometrical_stiffness (X0 (:, indices), X (:, indices), rot (e, :, :, :), stress (e, :, :))
 			do i = 1, neno
-				ei = ee (i)
+				ei = indices (i)
 				do j = 1, neno
-					ej = ee (j)
+					ej = indices (j)
 					Kg (6 * (ei - 1) + 1:6 * ei, 6 * (ej - 1) + 1:6 * ej) = &
 						Kg (6 * (ei - 1) + 1:6 * ei, 6 * (ej - 1) + 1:6 * ej) &
 						+ Ke (6 * (i - 1) + 1:6 * i, 6 * (j - 1) + 1:6 * j)
@@ -390,24 +390,23 @@ module beam
 		integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
 		double precision, dimension (:, :), intent (in) :: X0, X  ! (3, no nodes)
 		double precision, dimension (:, :, :), intent (in) :: stress  ! (no ele, 6, no gauss)
-		double precision, dimension (6 * size (X (1, :))) :: Fint  ! (6*no nodes)
-		integer :: nno, nele, neno, e, i, ei
-		integer, dimension (size (ele (1, :))) :: ee
-		double precision, dimension (6, size (ele (1, :))) :: Fie
+		double precision, dimension (6, size (X (1, :))) :: Fint  ! (6, no nodes)
+		integer :: nno, nele, neno, j, i, ei
+		integer, dimension (size (ele (1, :))) :: indices
+		double precision, dimension (6, size (ele (1, :))) :: Fj
 		
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
 		
 		Fint = 0.0D0
 		
-		do e = 1, nele
-			ee = ele (e, :)
-			neno = size (ee)
-			Fie = internal_forces (X0 (:, ee), X (:, ee), stress (e, :, :))
+		do j = 1, nele
+			indices = ele (j, :)
+			neno = size (indices)
+			Fj = internal_forces (X0 (:, indices), X (:, indices), stress (j, :, :))
 			do i = 1, neno
-				ei = ee (i)
-				Fint (6 * (ei - 1) + 1:6 * ei) = &
-					Fint (6 * (ei - 1) + 1:6 * ei) + Fie (:, i)
+				ei = indices (i)
+                Fint (:, ei) = Fint (:, ei) + Fj (:, i)
 			end do
 		end do
 	
@@ -422,28 +421,27 @@ module beam
 		double precision, dimension (:, :), intent (in) :: X0
 		double precision, dimension (:, :), intent (in) :: Q
 		double precision, dimension (:, :, :), intent (in) :: pressure
-		double precision, dimension (6 * size (X0 (1, :))) :: Fext
-		integer :: nno, nele, neno, e, i, ei
-		integer, dimension (size (ele (1, :))) :: ee
-		double precision, dimension (6, size (ele (1, :))) :: Fee
+		double precision, dimension (6, size (X0 (1, :))) :: Fext
+		integer :: nno, nele, neno, j, i, ei
+		integer, dimension (size (ele (1, :))) :: indices
+		double precision, dimension (6, size (ele (1, :))) :: Fj
 		
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
 		
 		Fext = 0.0D0
 		
-		do e = 1, nele
-			ee = ele (e, :)
-			neno = size (ee)
-			Fee = external_forces (X0 (:, ee), pressure (e, :, :))
+		do j = 1, nele
+			indices = ele (j, :)
+			neno = size (indices)
+			Fj = external_forces (X0 (:, indices), pressure (j, :, :))
 			do i = 1, neno
-				ei = ee (i)
-				Fext (6 * (ei - 1) + 1:6 * ei) = &
-					Fext (6 * (ei - 1) + 1:6 * ei) + Fee (:, i)			
+				ei = indices (i)
+				Fext (:, ei) = Fext (:, ei) + Fj (:, i)			
 			end do
 		end do
 		
-		Fext = Fext + reshape (Q, (/ 6 * nno /))
+		Fext = Fext + Q
 	
 	end function Fext
 	
@@ -458,17 +456,17 @@ module beam
 		double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
 		double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
 		double precision, dimension (:, :, :), intent (out) :: stress  ! (no ele, 6, no gauss)
-		integer :: nno, nele, e
-		integer, dimension (size (ele (1, :))) :: ee
+		integer :: nno, nele, j
+		integer, dimension (size (ele (1, :))) :: indices
 		
 		nno = size (X0 (1, :))
 		nele = size (ele (:, 1))
 		
-		do e = 1, nele
-			ee = ele (e, :)
+		do j = 1, nele
+			indices = ele (j, :)
 			call curvature ( &
-				X0 (:, ee), X (:, ee), th (:, ee), C, &
-				rot (e, :, :, :), om (e, :, :), stress (e, :, :) &
+				X0 (:, indices), X (:, indices), th (:, indices), C, &
+				rot (j, :, :, :), om (j, :, :), stress (j, :, :) &
 			)
 		end do
 		
