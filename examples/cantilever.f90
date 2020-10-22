@@ -24,7 +24,7 @@ program cantilever
     double precision, dimension (6, 6) :: C
     logical, dimension (6, noNodes) :: DOF
     double precision, dimension (6, noNodes) :: Uload, Q, R
-    integer :: j, NoIter
+    integer :: j, noIter
     
     ! =================================================
     ! ELASTIC MODULI MATRIX
@@ -59,7 +59,7 @@ program cantilever
             
             Q (5, noNodes) = Q (5, noNodes) + Q0 / noSteps
             
-            call newton_iter (mesh=mesh, DOF6=DOF, Uload=Uload, Q=Q, R=R, NoIter=NoIter)
+            call newton_iter (mesh=mesh, DOF6=DOF, Uload=Uload, Q=Q, R=R, noIter=noIter)
             
         end if
         
