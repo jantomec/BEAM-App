@@ -31,7 +31,7 @@ skip = 1
 data = []
 wdir = os.getcwd()
 
-test = 'cantilever'
+test = 'cantilever-results'
 
 datapath = wdir + '\\' + test
 
@@ -48,5 +48,4 @@ ax.set_ylim((-0.05, 0.22))
 for i in range(0,nsteps):
     ax.plot(data[i,:,3], data[i,:,1])
 
-plt.show()
-#plt.savefig(test+'.png')  # to save image
+plt.savefig(test+'.png')  # to save image
