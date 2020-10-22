@@ -5,19 +5,18 @@
 !   Part II: Computational aspects
 !
 ! =============================================================================
-! 
-!                  | F                      
-!                  |                        
-!           _ _ _ _v_ _ _ _                 EA      = 170000
-!         /                 \               GAy     = 170
-!        /                   \              GAz     = 17000
-!       /                     \             Jx      = 170
-!      /                       \            EIyy    = 170
-!     /                         \           EIzz    = 170
-!    |                           |          N       = 40
-!    |                           |          L       = 1.5
-!    |                           |
-!    0                           -
+!
+!                  | F
+!                  |
+!                  v
+!              *********                 EA      = 170000
+!          ***           ***             GAy     = 170
+!        **                 **           GAz     = 17000
+!      **                     **         Jx      = 170
+!     **                       **        EIyy    = 170
+!    **                         **       EIzz    = 170
+!    *                           *       N       = 40
+!    0                           -       L       = 1.5
 !
 ! =============================================================================
 
@@ -31,16 +30,16 @@ program arch
     
     implicit none
     
-    integer, parameter :: noElements = 40
-    integer, parameter :: elementOrder = 1
-    integer, parameter :: gaussOrder = 1
+    integer,          parameter :: noElements = 40
+    integer,          parameter :: elementOrder = 1
+    integer,          parameter :: gaussOrder = 1
     double precision, parameter :: L = 1.5D0
     double precision, parameter :: PI = 4 * atan (1.0D0), DEG = PI / 180
     double precision, parameter :: Q0 = -1400.0D0
     double precision, parameter :: dS = 0.2D0
-    integer, parameter :: MAXITER = 20
+    integer,          parameter :: MAXITER = 20
     double precision, parameter :: TOLER = 1D-8
-    integer, parameter :: MAXSTEPS = 1000
+    integer,          parameter :: MAXSTEPS = 1000
     double precision, dimension (6), parameter :: material = (/ 170000.0D0, 170.0D0, 17000.0D0, 170.0D0, 170.0D0, 170.0D0 /)
     character (len = 12), parameter :: folder = 'arch-results'
     
