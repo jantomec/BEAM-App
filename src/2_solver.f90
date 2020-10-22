@@ -17,6 +17,7 @@
 module solver
 
     use beam
+    use mesh_objects
     
     implicit none
     
@@ -26,43 +27,43 @@ module solver
     
     contains
     
-    subroutine pack2 (A, DOF6, B)
+    ! subroutine pack2 (A, DOF6, B)
         
-        implicit none
+        ! implicit none
         
-        double precision, dimension (:, :), intent (in) :: A
-        logical, dimension (:), intent (in) :: DOF6
-        double precision, dimension (:, :), intent (out) :: B
-        double precision, dimension (size (A (:, 1)), size (B (1, :))) :: AB
-        integer :: j
+        ! double precision, dimension (:, :), intent (in) :: A
+        ! logical, dimension (:), intent (in) :: DOF6
+        ! double precision, dimension (:, :), intent (out) :: B
+        ! double precision, dimension (size (A (:, 1)), size (B (1, :))) :: AB
+        ! integer :: j
         
-        do j = 1, size (A (:, 1))
-            AB (j, :) = pack (A (j, :), DOF6)
-        end do
-        do j = 1, size (B (1, :))
-            B (:, j) = pack (AB (:, j), DOF6)
-        end do
+        ! do j = 1, size (A (:, 1))
+            ! AB (j, :) = pack (A (j, :), DOF6)
+        ! end do
+        ! do j = 1, size (B (1, :))
+            ! B (:, j) = pack (AB (:, j), DOF6)
+        ! end do
     
-    end subroutine pack2
+    ! end subroutine pack2
     
-    subroutine logicwrite (A, DOF6, B)
+    ! subroutine logicwrite (A, DOF6, B)
         
-        implicit none
+        ! implicit none
         
-        double precision, dimension (:), intent (in) :: A
-        logical, dimension (:), intent (in) :: DOF6
-        double precision, dimension (:), intent (out) :: B
-        integer :: j, k
+        ! double precision, dimension (:), intent (in) :: A
+        ! logical, dimension (:), intent (in) :: DOF6
+        ! double precision, dimension (:), intent (out) :: B
+        ! integer :: j, k
         
-        k = 1
-        do j = 1, size (B)  ! overwrite the result
-            if (DOF6 (j) .eqv. .TRUE.) then
-                B (j) = A (k)
-                k = k + 1
-            end if
-        end do
+        ! k = 1
+        ! do j = 1, size (B)  ! overwrite the result
+            ! if (DOF6 (j) .eqv. .TRUE.) then
+                ! B (j) = A (k)
+                ! k = k + 1
+            ! end if
+        ! end do
         
-    end subroutine logicwrite
+    ! end subroutine logicwrite
     
     subroutine begin_table (typ)
         
@@ -107,11 +108,15 @@ module solver
         
         call dgetrf (ndof, ndof, A, ndof, ipiv, info)  ! LU factorization
         if (info .ne. 0) then
+            print *, 'Module: solver, Function: dgetrf'
+            print *, 'Message: LU factorization error.'
             stop
         end if
         
         call dgetrs ('N', ndof, 1, A, ndof, ipiv, bflat, ndof, info)  ! solve system
         if (info .ne. 0) then
+            print *, 'Module: solver, Function: dgetrs'
+            print *, 'Message: Invert matrix error.'
             stop
         end if
         
@@ -139,50 +144,54 @@ module solver
     ! prints ....... boolean, indicating if intermediate info statements should be printed
     !
     ! modify U, rot, om, stress
-    subroutine newton_iter (ele, X0, U, C, DOF6, Uload, Q, pressure, rot, om, stress, R, TOLER, MAXITER, TEST, Niter, prints)
+    subroutine newton_iter (mesh, DOF6, Uload, Q, R, NoIter, TOLER, MAXITER, TEST, PRINTS)
     
         implicit none
         
-        integer, dimension (:, :), intent (in) :: ele  ! (no ele, no nodes on ele)
-        double precision, dimension (:, :), intent (in) :: X0  ! (3, no all nodes)
-        double precision, dimension (:, :), intent (inout) :: U  ! (3, no all nodes)
-        double precision, dimension (6, 6), intent (in) :: C
-        logical, dimension (:, :), intent (in) :: DOF6  ! (6, no all nodes)
-        double precision, dimension (:, :), intent (in) :: Uload, Q  ! (6, no all nodes)
-        double precision, dimension (:, :, :), intent (in) :: pressure  ! (no ele, 6, no nodes on ele)
-        double precision, dimension (:, :, :, :), intent (inout) :: rot  ! (no ele, no gauss, 3, 3)
-        double precision, dimension (:, :, :), intent (inout) :: om  ! (no ele, 3, no gauss)
-        double precision, dimension (:, :, :), intent (inout) :: stress  ! (no ele, 6, no gauss)
-        double precision, dimension (:, :), intent (out) :: R  ! (6, no all nodes)
-        double precision, intent (in) :: TOLER
-        integer, intent (in) :: MAXITER
-        character (len = 3), intent (in) :: TEST
-        integer, intent (out) :: Niter
-        logical, intent (in) :: prints
+        type (ElementMesh),                            intent (inout) :: mesh
+        logical,          dimension (6, mesh%NoNodes), intent (in)    :: DOF6
+        double precision, dimension (6, mesh%NoNodes), intent (in)    :: Uload, Q
+        double precision, dimension (6, mesh%NoNodes), intent (out)   :: R
+        integer,                                       intent (out)   :: NoIter
         
-        integer :: nno, ndof, i, j, k, info
-        double precision, dimension (6 * size (X0 (1, :)), 6 * size (X0 (1, :))) :: tangent
-        double precision, dimension (3, size (X0 (1, :))) :: X, dU, dth
-        double precision, dimension (6, size (X0 (1, :))) :: Fint, Fext
-        logical, dimension (6 * size (X0 (1, :))) :: dof
-        double precision :: convtest
+        double precision,    optional :: TOLER
+        integer,             optional :: MAXITER
+        character (len = 3), optional :: TEST
+        logical,             optional :: PRINTS
+        double precision              :: TOLERCopy
+        integer                       :: MAXITERCopy
+        character (len = 3)           :: TESTCopy
+        logical                       :: PRINTSCopy
         
-        nno = size (X0 (1, :))
-        ndof = 6 * nno
+        double precision, dimension (6 * mesh%NoNodes, 6 * mesh%NoNodes) :: tangent
+        double precision, dimension (3, mesh%NoNodes)                    :: X, dU, dth
+        double precision, dimension (6, mesh%NoNodes)                    :: Fint, Fext
+        logical,          dimension (6 * mesh%NoNodes)                   :: dof
+        double precision                                                 :: convtest
+        integer                                                          :: i, j, k, info
+        
+        if (      present(TOLER))   TOLERCopy   = TOLER
+        if (.NOT. present(TOLER))   TOLERCopy   = 1.0D-8
+        if (      present(MAXITER)) MAXITERCopy = MAXITER
+        if (.NOT. present(MAXITER)) MAXITERCopy = 30
+        if (      present(TEST))    TESTCopy    = TEST
+        if (.NOT. present(TEST))    TESTCopy    = 'RSD'
+        if (      present(prints))  PRINTSCopy  = PRINTS
+        if (.NOT. present(prints))  PRINTSCopy  = .TRUE.
         
         R = Uload  ! fill R with displacement load
         dof = pack (DOF6, .TRUE.)
         
-        if (prints) call begin_table ('N')
+        if (PRINTSCopy) call begin_table ('N')
         
-        do i = 0, MAXITER-1
+        do i = 0, MAXITERCopy-1
             
-            Niter = i + 1
+            NoIter = i + 1
             
             if (i > 0) then
-                tangent = assemble_tangent (ele, X0, X, rot, C, stress)  ! tangent
+                tangent = assemble_tangent (mesh)  ! tangent
                 
-                do j = 1, ndof
+                do j = 1, 6*mesh%NoNodes
                     if (.NOT. dof (j)) then
                         tangent (:, j) = 0.0D0
                         tangent (j, :) = 0.0D0
@@ -197,32 +206,32 @@ module solver
             dU = R (1:3, :)  ! divide displacements and rotations
             dth = R (4:6, :)
             
-            U = U + dU
-            X = X0 + U
+            mesh%Displacements = mesh%Displacements + dU
+            mesh%Positions = mesh%Coordinates + mesh%Displacements
+                        
+            if (TESTCopy .eq. 'DSP') convtest = norm2 (R)  ! R are incremental updates
             
-            if (TEST .eq. 'DSP') convtest = norm2 (R)  ! R are incremental updates
-            
-            call update_stress_strain (ele, X0, X, dth, C, rot, om, stress)
-            
-            Fint = assemble_internal_force (ele, X0, X, stress)
-            Fext = assemble_external_force (ele, X0, Q, pressure)
+            call update_stress_strain (mesh, dth)
+                        
+            Fint = assemble_internal_force (mesh)
+            Fext = assemble_external_force (mesh, Q)
             R = Fext - Fint  ! compute residual, fill R with residual forces
             
             do j = 1, 6
-                do k = 1, nno
+                do k = 1, mesh%NoNodes
                     if (.NOT. DOF6 (j, k)) R(j, k) = 0.0D0
                 end do
             end do
             
-            if (TEST .eq. 'RSD') convtest = norm2 (R)  ! R are residual forces
+            if (TESTCopy .eq. 'RSD') convtest = norm2 (R)  ! R are residual forces
                         
-            if (prints) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
-            if (convtest < TOLER) exit
+            if (PRINTSCopy) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
+            if (convtest < TOLERCopy) exit
             
         end do
                 
-        if (i .eq. MAXITER) then
-            if (prints) write (6, '(/, "Not converging")')
+        if (i .eq. MAXITERCopy) then
+            if (PRINTSCopy) write (6, '(/, "Not converging")')
             stop
         end if
         

@@ -23,48 +23,48 @@ module shape_functions
 	contains
 	
 	! evaluate shape function in given points (gauss points)
-	function shfun (e_ord, pts)
+	function shfun (nno, pts)
 		
 		implicit none
 		
-		integer, intent (in) :: e_ord
+		integer, intent (in) :: nno
 		double precision, dimension (:), intent (in) :: pts
-		double precision, dimension (e_ord + 1, size (pts)) :: shfun
+		double precision, dimension (nno, size (pts)) :: shfun
 		
-		if (e_ord == 1) then
+		if (nno == 2) then
 			shfun (1, :) = -0.5D0 * pts + 0.5D0
 			shfun (2, :) = 0.5D0 * pts + 0.5D0
-		else if (e_ord == 2) then
+		else if (nno == 3) then
 			shfun (1, :) = 0.5D0 * pts ** 2 - 0.5D0 * pts
 			shfun (2, :) = -1.0D0 * pts ** 2 + 1.0D0
 			shfun (3, :) = 0.5D0 * pts ** 2 + 0.5D0 * pts
 		else
 			print *, 'Module: shape_functions, Function: shfun'
-			print *, 'Message: Unexpected element_order.'
+			print *, 'Message: Unexpected element order.'
 			stop
 		end if		
 	
 	end function shfun
 	
 	! evaluate shape function derivatives in given points (gauss points)
-	function shdfun (e_ord, pts)
+	function shdfun (nno, pts)
 		
 		implicit none
 		
-		integer, intent (in) :: e_ord
+		integer, intent (in) :: nno
 		double precision, dimension (:), intent (in) :: pts
-		double precision, dimension (e_ord + 1, size (pts)) :: shdfun
+		double precision, dimension (nno, size (pts)) :: shdfun
 				
-		if (e_ord == 1) then
+		if (nno == 2) then
 			shdfun (1, :) = -0.5D0
 			shdfun (2, :) = 0.5D0
-		else if (e_ord == 2) then
+		else if (nno == 3) then
 			shdfun (1, :) = pts - 0.5D0
 			shdfun (2, :) = -2.0D0 * pts
 			shdfun (3, :) = pts + 0.5D0
 		else
 			print *, 'Module: shape_functions, Function: shdfun'
-			print *, 'Message: Unexpected element_order.'
+			print *, 'Message: Unexpected element order.'
 			stop
 		end if		
 	

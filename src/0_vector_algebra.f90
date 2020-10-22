@@ -18,7 +18,7 @@ module vector_algebra
 	
 	private
 	
-	public :: cross_product, tensor_product, skew, rv2mat
+	public :: cross_product, tensor_product, skew, rv2mat, diagonalMatrix
 	
 	contains
 	
@@ -129,5 +129,20 @@ module vector_algebra
 		T = I + T1 + T2
 		
 	end function rv2mat
+    
+    pure function diagonalMatrix (a)
+	
+		implicit none
+		
+		double precision, dimension (:), intent (in) :: a
+		double precision, dimension (size (a), size (a)) :: diagonalMatrix
+		integer :: i
+		
+		diagonalMatrix = 0.0D0
+        do i = 1, 6
+            diagonalMatrix (i, i) = a (i)
+        end do
+		
+	end function diagonalMatrix
 	
 end module
