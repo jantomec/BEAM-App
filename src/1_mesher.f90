@@ -15,6 +15,7 @@ module mesher
 	
 	use mesh_objects
 	use vector_algebra
+    use legendre_gauss
 	
 	implicit none
 	
@@ -22,7 +23,7 @@ module mesher
 	
 	double precision, parameter :: PI = 4 * atan (1.0D0)
 	
-	public :: lineMesh!, ramsh, arcmsh, loadmesh
+	public :: lineMesh, arcMesh!, ramsh, loadmesh
 	
 	contains
 	
@@ -62,6 +63,54 @@ module mesher
         lineMesh = ElementMesh_init (coordinates, elements)
 		
 	end function lineMesh
+    
+    function arcMesh (radius, phi_i, phi_f, noElements, elementOrder, gaussOrder, C, pressure)
+		
+		type (ElementMesh)                                 :: arcMesh
+        double precision,                   intent (in)    :: radius, phi_i, phi_f
+        integer,                            intent (in)    :: noElements
+        integer,                            intent (in)    :: elementOrder
+        integer,                            intent (in)    :: gaussOrder
+        double precision, dimension (6, 6), intent (in)    :: C
+        double precision, dimension (6, gaussOrder), optional :: pressure
+		
+		double precision,   dimension (3, elementOrder*noElements+1) :: coordinates
+		type (LineElement), dimension (noElements)                   :: elements
+		integer,            dimension (elementOrder+1)               :: nodes
+		type (LineElement) :: element
+		integer            :: i, j
+		double precision   :: dphi, phi1, phi2, phig
+		double precision, dimension (gaussOrder, 3,3) :: rotationMatrix
+        
+        double precision, parameter :: PI = 4 * atan (1.0D0)
+        double precision, dimension (gaussOrder) :: pts, wgts
+        double precision, dimension (3) :: rotvec
+        
+		coordinates = 0.0D0
+		dphi = (phi_f - phi_i) / (elementOrder*noElements)
+		do i = 1, elementOrder*noElements + 1
+			coordinates (3, i) = radius * cos (phi_i + (i - 1) * dphi)
+			coordinates (1, i) = radius * sin (phi_i + (i - 1) * dphi)
+		end do
+		
+        call legauss (gaussOrder, pts, wgts)
+        
+        do i = 1, noElements
+            nodes = (/ (j, j = elementOrder*(i-1)+1, elementOrder*i+1) /)
+            phi1 = phi_i + (nodes (1) - 1) * dphi
+			phi2 = phi_i + (nodes (elementOrder + 1) - 1) * dphi
+            do j = 1, gaussOrder
+				phig = ((pts (j) + 1.0D0) / 2.0D0 * (phi2 - phi1) + phi1) + PI / 2
+                rotvec = (/ 0.0D0, phig, 0.0D0 /)
+				rotationMatrix (j, :, :) = rv2mat (rotvec)
+			end do
+            element = LineElement_init (nodes=nodes, C=C, rotationMatrix=rotationMatrix, pressure=pressure)
+            elements (i) = element
+        end do
+        
+        arcMesh = ElementMesh_init (coordinates, elements)
+        		
+	end function arcMesh
 	
 	! create right-angle mesh
 	!
@@ -102,9 +151,9 @@ module mesher
 	! X0 ........... initial coordinates (3, no all nodes)
 	!
 	! modify ele, X0
-	! subroutine arcmsh (R, phi_i, phi_f, mesh, rot, gpts)
+	! subroutine arcmsh (radius, phi_i, phi_f, mesh, rot, gpts)
 		
-		! double precision, intent (in) :: R, phi_i, phi_f
+		! double precision, intent (in) :: radius, phi_i, phi_f
 		! type (ElementMesh), intent (inout) :: mesh
 		! double precision, dimension (:, :, :, :), intent (out) :: rot
 		! double precision, dimension (:), intent (in) :: gpts
@@ -118,8 +167,8 @@ module mesher
 		! mesh%X0 = 0.0D0
 		! dphi = (phi_f - phi_i) / (mesh%Nno - 1)
 		! do i = 1, mesh%Nno
-			! mesh%X0 (3, i) = R * cos (phi_i + (i - 1) * dphi)
-			! mesh%X0 (1, i) = R * sin (phi_i + (i - 1) * dphi)
+			! mesh%X0 (3, i) = radius * cos (phi_i + (i - 1) * dphi)
+			! mesh%X0 (1, i) = radius * sin (phi_i + (i - 1) * dphi)
 		! end do
 		
 		! do i = 1, mesh%order + 1
