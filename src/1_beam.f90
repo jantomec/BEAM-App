@@ -345,6 +345,8 @@ module beam
         
         implicit none
         
+        type (LineElement) :: element
+        
         double precision, dimension (6 * element%NoNodes, 6 * element%NoNodes)  :: K
     
     end function mass_stiffness
