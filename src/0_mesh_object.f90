@@ -39,9 +39,10 @@ module mesh_objects
         integer :: NoNodes, NoGauss
         integer,          dimension (:),       allocatable :: Nodes
 		double precision, dimension (6, 6)                 :: C
-		double precision, dimension (6, 6)                 :: InertiaMatrix  ! (NoGauss, 3, 3)
+		double precision, dimension (3, 3)                 :: InertiaMatrix  ! (3, 3)
 		double precision, dimension (:, :, :), allocatable :: RotationMatrix  ! (NoGauss, 3, 3)
 		double precision, dimension (:, :),    allocatable :: Strain, Stress, Pressure  ! (6, NoGauss)
+		double precision, dimension (:, :),    allocatable :: AngularVelocity, AngularAcceleration  ! (3, NoGauss)
         
         double precision :: A    ! Area
         double precision :: rho  ! Density
@@ -75,7 +76,8 @@ module mesh_objects
     
     contains
     
-    subroutine LineElement_init (self, nodes, properties, rotationMatrix, strain, stress, pressure)
+    subroutine LineElement_init (self, nodes, properties, rotationMatrix, &
+                                 strain, stress, pressure, angularVelocity, angularAcceleration)
         
         implicit none
         
@@ -84,7 +86,7 @@ module mesh_objects
         integer,          dimension (:)                 :: nodes
 		type (ElementProperties)                        :: properties
 		double precision, dimension (:, :, :)           :: rotationMatrix
-		double precision, dimension (:, :), optional    :: strain, stress, pressure
+		double precision, dimension (:, :), optional    :: strain, stress, pressure, angularVelocity, angularAcceleration
         
         self%NoNodes = size (nodes)
         self%NoGauss = size (rotationMatrix(:, 1, 1))
@@ -94,6 +96,8 @@ module mesh_objects
         allocate (self%Strain (6, self%NoGauss))
         allocate (self%Stress (6, self%NoGauss))
         allocate (self%Pressure (6, self%NoGauss))
+        allocate (self%AngularVelocity (3, self%NoGauss))
+        allocate (self%AngularAcceleration (3, self%NoGauss))
         
         self%nodes = nodes
         self%RotationMatrix = rotationMatrix
@@ -101,10 +105,13 @@ module mesh_objects
         self%Strain = 0.0D0
         self%Stress = 0.0D0
         self%Pressure = 0.0D0
+        self%AngularVelocity = 0.0D0
+        self%AngularAcceleration = 0.0D0
         
         if (present (strain)) self%Strain = strain
         if (present (stress)) self%Stress = stress
-        if (present (pressure)) self%Pressure = pressure
+        if (present (angularVelocity)) self%AngularVelocity = angularVelocity
+        if (present (angularAcceleration)) self%AngularAcceleration = angularAcceleration
         
         self%A   = properties%Area
         self%rho = properties%Density

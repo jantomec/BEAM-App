@@ -241,7 +241,6 @@ module beam
         
     end subroutine curvature
     
-    ! compute stiffness of an element
     function material_stiffness (coordinates, positions, element) result (K)
         
         implicit none
@@ -289,7 +288,6 @@ module beam
     
     end function material_stiffness
     
-    ! compute stiffness of an element
     function geometrical_stiffness (coordinates, positions, element) result (K)
         
         implicit none
@@ -342,6 +340,14 @@ module beam
         K = L / 2.0D0 * K
     
     end function geometrical_stiffness
+    
+    function mass_stiffness (element) result (K)
+        
+        implicit none
+        
+        double precision, dimension (6 * element%NoNodes, 6 * element%NoNodes)  :: K
+    
+    end function mass_stiffness
     
     ! compute stiffness of an element
     function assemble_tangent (mesh) result (Kg)
