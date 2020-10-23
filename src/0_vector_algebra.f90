@@ -18,7 +18,7 @@ module vector_algebra
 	
 	private
 	
-	public :: cross_product, tensor_product, skew, rv2mat, diagonalMatrix, identityMatrix
+	public :: cross_product, tensor_product, skew, exponentialMap, diagonalMatrix, identityMatrix
 	
 	contains
 	
@@ -97,7 +97,7 @@ module vector_algebra
 	
 	! create rotation matrix from rotation vector
 	! from Argyris_J.H.--An_excursion_into_large_rotations, p.88
-	function rv2mat (r) result (T)
+	function exponentialMap (r) result (T)
 		
 		implicit none
 		
@@ -128,7 +128,7 @@ module vector_algebra
 		T2 = 0.5D0 * (sin_hr / norm_hr) ** 2 * S2
 		T = I + T1 + T2
 		
-	end function rv2mat
+	end function exponentialMap
     
     pure function diagonalMatrix (a)
 	

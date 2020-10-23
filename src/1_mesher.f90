@@ -102,7 +102,7 @@ module mesher
             do j = 1, gaussOrder
 				phig = ((pts (j) + 1.0D0) / 2.0D0 * (phi2 - phi1) + phi1) + PI / 2
                 rotvec = (/ 0.0D0, -phig, 0.0D0 /)
-				rotationMatrix (j, :, :) = rv2mat (rotvec)
+				rotationMatrix (j, :, :) = exponentialMap (rotvec)
                 print *, phig
 			end do
             call elements (i)%init (nodes=nodes, properties=properties, rotationMatrix=rotationMatrix, pressure=pressure)
@@ -182,7 +182,7 @@ module mesher
 			! do j = 1, size (gpts)
 				! phig = ((gpts (j) + 1.0D0) / 2.0D0 * (phi2 - phi1) + phi1) + PI / 2
 				! rotvec = (/ 0.0D0, phig, 0.0D0 /)
-				! rot (i, j, :, :) = rv2mat (rotvec)
+				! rot (i, j, :, :) = exponentialMap (rotvec)
 			! end do
 		! end do
 		

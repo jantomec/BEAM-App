@@ -208,7 +208,7 @@ module beam
                 
         do g = 1, element%NoGauss
             om = element%strain (4:6, g)
-            R = rv2mat (t (:, g))
+            R = exponentialMap (t (:, g))
             element%RotationMatrix (g, :, :) = matmul (R, element%RotationMatrix (g, :, :))
             if (tn (g) == 0) then
                 om = om + dt (:, g)
