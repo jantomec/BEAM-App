@@ -24,8 +24,8 @@ module beam
     private
     
     public :: assemble_tangent, assemble_tangent_dynamic, &
-        assemble_external_force, assemble_internal_force, &
-        update_stress_strain
+        assemble_external_force, assemble_internal_force, assemble_inertial_force, &
+        update_stress_strain, updateDynamics
     
     contains
     
@@ -288,7 +288,7 @@ module beam
         
     end subroutine curvature
     
-    subroutine dynamicUpdate (element, theta, h, beta, gamma)
+    subroutine update_angular_properties (element, theta, h, beta, gamma)
         
         implicit none
         
@@ -326,7 +326,7 @@ module beam
             
         end do
         
-    end subroutine dynamicUpdate
+    end subroutine update_angular_properties
     
     function material_stiffness (coordinates, positions, element) result (K)
         
@@ -662,6 +662,25 @@ module beam
         end do
         
     end subroutine update_stress_strain
+    
+    subroutine updateDynamics (mesh, theta, h, beta, gamma)
+    
+        implicit none
+        
+        type (ElementMesh)                :: mesh
+        double precision, dimension (:,:) :: theta
+        double precision                  :: h, beta, gamma
+        
+        type (LineElement)  :: element
+        integer             :: j
+        
+        do j = 1, mesh%NoElements
+            element = mesh%Elements (j)
+            call update_angular_properties (element, theta(:, element%Nodes), h, beta, gamma)
+            mesh%Elements (j) = element
+        end do
+        
+    end subroutine updateDynamics
     
     
 end module
