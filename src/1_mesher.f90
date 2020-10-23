@@ -27,14 +27,14 @@ module mesher
 	
 	contains
 	
-	function lineMesh (L, noElements, elementOrder, gaussOrder, C, pressure)
+	function lineMesh (L, noElements, elementOrder, gaussOrder, properties, pressure)
 		
 		type (ElementMesh)                                 :: lineMesh
         double precision,                   intent (in)    :: L
         integer,                            intent (in)    :: noElements
         integer,                            intent (in)    :: elementOrder
         integer,                            intent (in)    :: gaussOrder
-        double precision, dimension (6, 6), intent (in)    :: C
+        type (ElementProperties),           intent (in)    :: properties
         double precision, dimension (6, gaussOrder), optional :: pressure
 		
 		double precision,   dimension (3, elementOrder*noElements+1) :: coordinates
@@ -57,21 +57,21 @@ module mesher
         do i = 1, noElements
             nodes = (/ (j, j = elementOrder*(i-1)+1, elementOrder*i+1) /)
             
-            call elements (i)%init (nodes=nodes, C=C, rotationMatrix=identityMatrix, pressure=pressure)
+            call elements (i)%init (nodes=nodes, properties=properties, rotationMatrix=identityMatrix, pressure=pressure)
         end do
         
         call lineMesh%init (coordinates, elements)
 		
 	end function lineMesh
     
-    function arcMesh (radius, phi_i, phi_f, noElements, elementOrder, gaussOrder, C, pressure)
+    function arcMesh (radius, phi_i, phi_f, noElements, elementOrder, gaussOrder, properties, pressure)
 		
 		type (ElementMesh)                                 :: arcMesh
         double precision,                   intent (in)    :: radius, phi_i, phi_f
         integer,                            intent (in)    :: noElements
         integer,                            intent (in)    :: elementOrder
         integer,                            intent (in)    :: gaussOrder
-        double precision, dimension (6, 6), intent (in)    :: C
+        type (ElementProperties),           intent (in)    :: properties
         double precision, dimension (6, gaussOrder), optional :: pressure
 		
 		double precision,   dimension (3, elementOrder*noElements+1) :: coordinates
@@ -104,8 +104,7 @@ module mesher
                 rotvec = (/ 0.0D0, phig, 0.0D0 /)
 				rotationMatrix (j, :, :) = rv2mat (rotvec)
 			end do
-            
-            call elements (i)%init (nodes=nodes, C=C, rotationMatrix=rotationMatrix, pressure=pressure)
+            call elements (i)%init (nodes=nodes, properties=properties, rotationMatrix=rotationMatrix, pressure=pressure)
         end do
         
         call arcMesh%init (coordinates, elements)

@@ -40,17 +40,27 @@ program arch
     integer,          parameter :: MAXITER = 20
     double precision, parameter :: TOLER = 1D-8
     integer,          parameter :: MAXSTEPS = 1000
-    double precision, dimension (6), parameter :: material = (/ 170000.0D0, 170.0D0, 17000.0D0, 170.0D0, 170.0D0, 170.0D0 /)
     character (len = 12), parameter :: folder = 'arch-results'
     
     type (ElementMesh) :: mesh
+    type (ElementProperties) :: properties
     double precision :: lambda
     integer, parameter :: noNodes = noElements * elementOrder + 1
     double precision, dimension (3 * noNodes) :: Uinc
-    double precision, dimension (6, 6) :: C
     logical, dimension (6, noNodes) :: DOF
     double precision, dimension (6, noNodes) :: Q, QC, R
     integer :: i, j, noIter, info
+    
+    ! =================================================
+    ! MATERIAL AND GEOMETRIC PROPERTIES
+    properties%Area             = 100.0D0
+    ! properties%Density          = 0.0D0
+    properties%ElasticModulus   = 1.7D2
+    properties%ShearModulus     = 1.7D2
+    properties%InertiaPrimary   = 1.0D0
+    properties%InertiaSecondary = 1.0D0
+    properties%InertiaTorsion   = 1.0D0
+    properties%ShearCoefficient = 1.0D0
     
     ! =================================================
     ! DATA INITIALIZATION
@@ -59,19 +69,10 @@ program arch
     Q = 0.0D0
     QC = 0.0D0
     R = 0.0D0
-    
-    ! =================================================
-    ! ELASTIC MODULI MATRIX
-    C = diagonalMatrix (material)
-    
+        
     ! =================================================
     ! MESH
-    mesh = arcMesh (L, -15.0D0 * DEG, 195.0D0 * DEG, noElements, elementOrder, gaussOrder, C)
-    
-    ! =================================================
-    ! SET UP RESULT FILES   
-    call removeFolder (folder)
-    call createFolder (folder)
+    mesh = arcMesh (L, -15.0D0 * DEG, 195.0D0 * DEG, noElements, elementOrder, gaussOrder, properties)
     
     ! =================================================
     ! BOUNDARY CONDITIONS
@@ -79,6 +80,11 @@ program arch
     DOF (:, 1) = .FALSE.
     DOF (:, noNodes) = (/ .FALSE., .FALSE., .FALSE., .TRUE., .TRUE., .TRUE.  /)
     Q (1, noNodes / 2 + 1) = Q0
+    
+    ! =================================================
+    ! SET UP RESULT FILES   
+    call removeFolder (folder)
+    call createFolder (folder)
     
     ! =================================================
     ! ARC-LENGTH ROUTINE

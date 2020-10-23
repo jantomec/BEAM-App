@@ -15,29 +15,26 @@ program cantilever
     integer,          parameter :: noNodes = noElements*elementOrder + 1
     double precision, parameter :: L = 1.0D0
     double precision, parameter :: PI = 4 * atan (1.0D0), Q0 = 8 * PI
-    double precision, dimension (6), parameter :: material = (/ 1.0D0, 1.0D0, 1.0D0, 1.0D0, 2.0D0, 1.0D0 /)
     character (len = *), parameter :: folder = 'cantilever-results'
     character (len = *), parameter :: fname_format = '("step", I0.3, ".dat")'
     
     type (ElementMesh) :: mesh
+    type (ElementProperties) :: properties
     
-    double precision, dimension (6, 6) :: C
     logical, dimension (6, noNodes) :: DOF
     double precision, dimension (6, noNodes) :: Uload, Q, R
     integer :: j, noIter
     
     ! =================================================
-    ! ELASTIC MODULI MATRIX
-    C = diagonalMatrix (material)
-    
-    ! =================================================
-    ! MESH  
-    mesh = lineMesh (L=L, noElements=noElements, elementOrder=elementOrder, gaussOrder=gaussOrder, C=C)
-    
-    ! =================================================
-    ! SET UP RESULT FILES   
-    call removeFolder (folder)
-    call createFolder (folder)
+    ! MATERIAL AND GEOMETRIC PROPERTIES
+    properties%Area             = 1.0D0
+    ! properties%Density          = 0.0D0
+    properties%ElasticModulus   = 1.0D0
+    properties%ShearModulus     = 1.0D0
+    properties%InertiaPrimary   = 1.0D0
+    properties%InertiaSecondary = 2.0D0
+    properties%InertiaTorsion   = 1.0D0
+    properties%ShearCoefficient = 1.0D0
     
     ! =================================================
     ! DATA INITIALIZATION
@@ -46,9 +43,18 @@ program cantilever
     R = 0.0D0
     
     ! =================================================
+    ! MESH  
+    mesh = lineMesh (L=L, noElements=noElements, elementOrder=elementOrder, gaussOrder=gaussOrder, properties=properties)
+    
+    ! =================================================
     ! BOUNDARY CONDITIONS
     DOF = .TRUE.
     DOF (:, 1) = .FALSE.
+    
+    ! =================================================
+    ! SET UP RESULT FILES   
+    call removeFolder (folder)
+    call createFolder (folder)
     
     ! =================================================
     ! FORCE CONTROL ROUTINE

@@ -19,15 +19,39 @@ module mesh_objects
     
     private
     
-    public :: LineElement, ElementMesh, LineElement_init, ElementMesh_init
+    public :: ElementProperties, LineElement, ElementMesh
 	
+    type ElementProperties
+        
+        double precision :: Area
+        double precision :: Density
+        double precision :: ElasticModulus
+        double precision :: ShearModulus
+        double precision :: InertiaPrimary
+        double precision :: InertiaSecondary
+        double precision :: InertiaTorsion
+        double precision :: ShearCoefficient
+        
+	end type ElementProperties
+    
 	type LineElement
         
         integer :: NoNodes, NoGauss
         integer,          dimension (:),       allocatable :: Nodes
 		double precision, dimension (6, 6)                 :: C
+		double precision, dimension (6, 6)                 :: InertiaMatrix  ! (NoGauss, 3, 3)
 		double precision, dimension (:, :, :), allocatable :: RotationMatrix  ! (NoGauss, 3, 3)
 		double precision, dimension (:, :),    allocatable :: Strain, Stress, Pressure  ! (6, NoGauss)
+        
+        double precision :: A    ! Area
+        double precision :: rho  ! Density
+        double precision :: E    ! ElasticModulus
+        double precision :: G    ! ShearModulus
+        double precision :: I1   ! Inertia around the primary main axis
+        double precision :: I2   ! Inertia around the secondary main axis
+        double precision :: Ip   ! Inertia around the secondary main axis
+        double precision :: It   ! Torsional inertia
+        double precision :: k    ! ShearCoefficient
         
         contains
         
@@ -51,14 +75,14 @@ module mesh_objects
     
     contains
     
-    subroutine LineElement_init (self, nodes, C, rotationMatrix, strain, stress, pressure)
+    subroutine LineElement_init (self, nodes, properties, rotationMatrix, strain, stress, pressure)
         
         implicit none
         
         class (LineElement), intent (inout)             :: self
         
         integer,          dimension (:)                 :: nodes
-		double precision, dimension (6, 6)              :: C
+		type (ElementProperties)                        :: properties
 		double precision, dimension (:, :, :)           :: rotationMatrix
 		double precision, dimension (:, :), optional    :: strain, stress, pressure
         
@@ -72,7 +96,6 @@ module mesh_objects
         allocate (self%Pressure (6, self%NoGauss))
         
         self%nodes = nodes
-        self%C = C
         self%RotationMatrix = rotationMatrix
         
         self%Strain = 0.0D0
@@ -82,6 +105,26 @@ module mesh_objects
         if (present (strain)) self%Strain = strain
         if (present (stress)) self%Stress = stress
         if (present (pressure)) self%Pressure = pressure
+        
+        self%A   = properties%Area
+        self%rho = properties%Density
+        self%E   = properties%ElasticModulus
+        self%G   = properties%ShearModulus
+        self%I1  = properties%InertiaPrimary
+        self%I2  = properties%InertiaSecondary
+        self%Ip  = self%I1 + self%I2
+        self%It  = properties%InertiaTorsion
+        self%k   = properties%ShearCoefficient
+        
+        self%C        = 0.0D0
+        self%C (1, 1) = self%G * self%A * self%k
+        self%C (2, 2) = self%G * self%A * self%k
+        self%C (3, 3) = self%E * self%A
+        self%C (4, 4) = self%E * self%I1
+        self%C (5, 5) = self%E * self%I2
+        self%C (6, 6) = self%G * self%It
+        
+        !self%InertiaMatrix
         
     end subroutine
     
