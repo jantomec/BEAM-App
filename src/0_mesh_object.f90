@@ -67,6 +67,8 @@ module mesh_objects
 		integer :: NoNodes, NoElements
 		double precision,   dimension (:, :), allocatable :: Coordinates
 		double precision,   dimension (:, :), allocatable :: Displacements
+		double precision,   dimension (:, :), allocatable :: Velocities
+		double precision,   dimension (:, :), allocatable :: Accelerations
 		double precision,   dimension (:, :), allocatable :: Positions
 		type (LineElement), dimension (:),    allocatable :: Elements
         
@@ -157,11 +159,17 @@ module mesh_objects
         self%NoElements = size (elements)
         
         allocate (self%Coordinates (3, self%NoNodes))
+        allocate (self%Displacements (3, self%NoNodes))
+        allocate (self%Velocities (3, self%NoNodes))
+        allocate (self%Accelerations (3, self%NoNodes))
+        allocate (self%Positions (3, self%NoNodes))
         allocate (self%Elements (self%NoElements))
         
         self%Coordinates = coordinates
         self%Elements = elements
         self%Displacements = 0.0D0 * coordinates
+        self%Velocities = 0.0D0 * coordinates
+        self%Accelerations = 0.0D0 * coordinates
         self%Positions = coordinates
         
     end subroutine
