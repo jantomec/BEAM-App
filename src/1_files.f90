@@ -21,6 +21,11 @@ module files
 	private
 	
 	public :: removeFolder, createFolder, writeResults
+    
+    interface writeResults
+        module procedure writeResults_newton
+        module procedure writeResults_arclength
+    end interface
 	
 	contains
 	
@@ -64,7 +69,7 @@ module files
 		
 	end subroutine createFolder
     
-    subroutine writeResults(mesh, R, j, folderName)
+    subroutine writeResults_newton(mesh, R, j, folderName)
         
         implicit none
         
@@ -98,6 +103,48 @@ module files
                    mesh%Positions (1, i), mesh%Positions (2, i), mesh%Positions (3, i), &
                    mesh%Displacements (1, i), mesh%Displacements (2, i), mesh%Displacements (3, i), &
                    R (1, i), R (2, i), R (3, i), R (4, i), R (5, i), R (6, i)
+        end do
+        
+        ! Close file
+        close(12)
+        
+    end subroutine
+    
+    subroutine writeResults_arclength(mesh, R, lambda, j, folderName)
+        
+        implicit none
+        
+        type (ElementMesh),                            intent (in) :: mesh
+        double precision, dimension (6, mesh%NoNodes), intent (in) :: R
+        double precision,                              intent (in) :: lambda
+        integer,                                       intent (in) :: j
+        character (len = *),                           intent (in) :: folderName
+        
+        character (len = *), parameter   :: fname_format = '("step", I0.3, ".dat")'
+        character (len = 255)            :: fname_long
+        character (len = :), allocatable :: fname
+        character (len = :), allocatable :: relpath
+        integer                          :: i
+                
+        ! Write new results file name to variable
+        write (fname_long, fname_format) j
+        fname = trim (fname_long)
+        
+        ! Open new file with designated name
+        relpath = folderName//'/'//fname
+        open (unit = 12, file = relpath, status = 'unknown', action = 'write')
+        
+        ! Write header line
+        write (12, '("node", 19X, "X1", 19X, "X2", 19X, "X3", 19X, "U1", 19X, "U2", 19X, "U3", 19X, "R1", 19X, "R2", 19X, &
+            "R3", 19X, "M1", 19X, "M2", 19X, "M3", 15X, "lambda")')
+        
+        ! Write for each node
+        do i = 1, mesh%NoNodes
+            write (12, '(I0.4, X, ES20.11E3, X, ES20.11E3, X, ES20.11E3, X, ES20.11E3, X, ES20.11E3, X, ES20.11E3, X, ES20.11E3, &
+                   X, ES20.11E3, X, ES20.11E3, X, ES20.11E3, X, ES20.11E3, X, ES20.11E3, X, ES20.11E3)') i, &
+                   mesh%Positions (1, i), mesh%Positions (2, i), mesh%Positions (3, i), &
+                   mesh%Displacements (1, i), mesh%Displacements (2, i), mesh%Displacements (3, i), &
+                   R (1, i), R (2, i), R (3, i), R (4, i), R (5, i), R (6, i), lambda
         end do
         
         ! Close file

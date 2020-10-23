@@ -93,20 +93,7 @@ program arch
             end if
         end if
         
-        call writeResults (mesh, R, j, folder) ! missing lambda
-        
-        ! write (fname, fname_format) j
-        ! fullname = trim (folder)//'/'//trim (fname)
-        ! open (unit = 12, file = trim (fullname), status = 'unknown', action = 'write')
-        ! write (12, '("node", 19X, "X1", 19X, "X2", 19X, "X3", 19X, "U1", 19X, "U2", 19X, "U3", 19X, "R1", 19X, &
-            ! "R2", 19X, "R3", 19X, "M1", 19X, "M2", 19X, "M3")')
-        ! do i = 1, noNodes
-            ! write (12, '(I0.4, X, ES20.13, X, ES20.13, X, ES20.13, X, ES20.13, X, ES20.13, X, &
-            ! ES20.13, X, ES20.13, X, ES20.13, X, ES20.13, X, ES20.13, X, ES20.13, X, &
-            ! ES20.13)') i, X (1, i), X (2, i), X (3, i), U (1, i), U (2, i), U (3, i), R (1, i), &
-            ! R (2, i), R (3, i), R (4, i), R (5, i), R (6, i)
-        ! end do
-        ! close(12)
+        call writeResults (mesh, R, lambda, j, folder)
         
         if (abs (lambda) > 1) exit
         
