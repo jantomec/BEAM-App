@@ -72,10 +72,10 @@ program arch
     Q = 0.0D0
     QC = 0.0D0
     R = 0.0D0
+    DOF = .TRUE.
     
     ! =================================================
     ! BOUNDARY CONDITIONS
-    DOF = .TRUE.
     DOF (:, 1) = .FALSE.
     DOF (:, mesh%NoNodes) = (/ .FALSE., .FALSE., .FALSE., .TRUE., .TRUE., .TRUE.  /)
     Q (3, mesh%NoNodes / 2 + 1) = -1.4D3

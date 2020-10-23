@@ -8,12 +8,7 @@ program cantilever
     
     implicit none
     
-    integer,          parameter :: noElements = 5
-    integer,          parameter :: elementOrder = 1
-    integer,          parameter :: gaussOrder = 1
     integer,          parameter :: noSteps = 1
-    integer,          parameter :: noNodes = noElements*elementOrder + 1
-    double precision, parameter :: L = 1.0D0
     double precision, parameter :: PI = 4 * atan (1.0D0), Q0 = 8 * PI
     character (len = *), parameter :: folder = 'cantilever-results'
     character (len = *), parameter :: fname_format = '("step", I0.3, ".dat")'
@@ -21,8 +16,8 @@ program cantilever
     type (ElementMesh) :: mesh
     type (ElementProperties) :: properties
     
-    logical, dimension (6, noNodes) :: DOF
-    double precision, dimension (6, noNodes) :: Uload, Q, R
+    logical,          dimension (:, :), allocatable :: DOF
+    double precision, dimension (:, :), allocatable :: Uload, Q, R
     integer :: j, noIter
     
     ! =================================================
@@ -38,17 +33,20 @@ program cantilever
         
     ! =================================================
     ! MESH  
-    mesh = lineMesh (L=L, noElements=noElements, elementOrder=elementOrder, gaussOrder=gaussOrder, properties=properties)
+    mesh = lineMesh (L=1.0D0, noElements=5, elementOrder=1, gaussOrder=1, properties=properties)
     
     ! =================================================
     ! DATA INITIALIZATION
+    allocate (DOF (6, mesh%NoNodes))
+    allocate (Uload (6, mesh%NoNodes), Q (6, mesh%NoNodes), R (6, mesh%NoNodes))
+    
     Uload = 0.0D0
     Q = 0.0D0
     R = 0.0D0
+    DOF = .TRUE.
     
     ! =================================================
     ! BOUNDARY CONDITIONS
-    DOF = .TRUE.
     DOF (:, 1) = .FALSE.
     
     ! =================================================
@@ -63,7 +61,7 @@ program cantilever
         
             write (6, '(/, "Step", X, I3)') j
             
-            Q (5, noNodes) = Q (5, noNodes) + Q0 / noSteps
+            Q (5, mesh%NoNodes) = Q (5, mesh%NoNodes) + Q0 / noSteps
             
             call newton_iter (mesh=mesh, DOF6=DOF, Uload=Uload, Q=Q, R=R, noIter=noIter)
             
