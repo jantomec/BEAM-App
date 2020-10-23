@@ -23,7 +23,9 @@ module beam
     
     private
     
-    public :: assemble_tangent, assemble_external_force, assemble_internal_force, update_stress_strain
+    public :: assemble_tangent, assemble_tangent_dynamic, &
+        assemble_external_force, assemble_internal_force, &
+        update_stress_strain
     
     contains
     
@@ -615,6 +617,32 @@ module beam
         Fext = Fext + Q
     
     end function assemble_external_force
+    
+    function assemble_inertial_force (mesh) result (Fine)
+    
+        implicit none
+        
+        type (ElementMesh)                                                      :: mesh
+        double precision, dimension (6, mesh%NoNodes)                           :: Fine
+        
+        type (LineElement)  :: element
+        integer             :: j, i, ei
+        double precision, dimension (:,:), allocatable :: Fj
+                
+        Fine = 0.0D0
+        
+        do j = 1, mesh%NoElements
+            element = mesh%Elements (j)
+            allocate (Fj (6, element%NoNodes))
+            Fj = inertial_forces (mesh%Coordinates, mesh%Accelerations, element)
+            do i = 1, element%NoNodes
+                ei = element%Nodes (i)
+                Fine (:, ei) = Fine (:, ei) + Fj (:, i)
+            end do
+            deallocate (Fj)
+        end do
+            
+    end function assemble_inertial_force
     
     ! compute global external force vector
     subroutine update_stress_strain (mesh, theta)
