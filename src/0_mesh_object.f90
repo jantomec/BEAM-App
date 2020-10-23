@@ -41,6 +41,7 @@ module mesh_objects
 		double precision, dimension (6, 6)                 :: C
 		double precision, dimension (3, 3)                 :: InertiaMatrix  ! (3, 3)
 		double precision, dimension (:, :, :), allocatable :: RotationMatrix  ! (NoGauss, 3, 3)
+		double precision, dimension (:, :, :), allocatable :: RotationMatrixLastConverged  ! (NoGauss, 3, 3)
 		double precision, dimension (:, :),    allocatable :: Strain, Stress, Pressure  ! (6, NoGauss)
 		double precision, dimension (:, :),    allocatable :: AngularVelocity, AngularAcceleration  ! (3, NoGauss)
         
@@ -93,6 +94,7 @@ module mesh_objects
         
         allocate (self%Nodes (self%NoNodes))
         allocate (self%RotationMatrix (self%NoGauss, 3, 3))
+        allocate (self%RotationMatrixLastConverged (self%NoGauss, 3, 3))
         allocate (self%Strain (6, self%NoGauss))
         allocate (self%Stress (6, self%NoGauss))
         allocate (self%Pressure (6, self%NoGauss))
@@ -101,6 +103,7 @@ module mesh_objects
         
         self%nodes = nodes
         self%RotationMatrix = rotationMatrix
+        self%RotationMatrixLastConverged = rotationMatrix
         
         self%Strain = 0.0D0
         self%Stress = 0.0D0
