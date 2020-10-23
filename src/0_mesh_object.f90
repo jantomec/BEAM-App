@@ -124,8 +124,10 @@ module mesh_objects
         self%C (5, 5) = self%E * self%I1
         self%C (6, 6) = self%E * self%I2
         
-        
-        !self%InertiaMatrix
+        self%InertiaMatrix        = 0.0D0
+        self%InertiaMatrix (1, 1) = self%rho * self%Ip
+        self%InertiaMatrix (2, 2) = self%rho * self%I1
+        self%InertiaMatrix (3, 3) = self%rho * self%I2
         
     end subroutine
     
