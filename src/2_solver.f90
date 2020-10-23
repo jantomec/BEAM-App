@@ -23,7 +23,7 @@ module solver
     
     private
     
-    public :: newton_iter, arcLength_iter!, newton_iter_det, arc_length_iter
+    public :: newton_iter, arcLength_iter, dynamic_iter!, newton_iter_det, arc_length_iter
     
     contains
         
@@ -229,6 +229,91 @@ module solver
         end if
         
     end subroutine newton_iter
+    
+    subroutine dynamic_iter (mesh, DOF6, Uload, Q, R, noIter, TOLER, MAXITER, TEST, PRINTS)
+    
+        implicit none
+        
+        type (ElementMesh),                            intent (inout) :: mesh
+        logical,          dimension (6, mesh%NoNodes), intent (in)    :: DOF6
+        double precision, dimension (6, mesh%NoNodes), intent (in)    :: Uload, Q
+        double precision, dimension (6, mesh%NoNodes), intent (out)   :: R
+        integer,                                       intent (out)   :: noIter
+        
+        double precision,    optional :: TOLER
+        integer,             optional :: MAXITER
+        character (len = 3), optional :: TEST
+        logical,             optional :: PRINTS
+        double precision              :: TOLERCopy
+        integer                       :: MAXITERCopy
+        character (len = 3)           :: TESTCopy
+        logical                       :: PRINTSCopy
+        
+        double precision, dimension (6 * mesh%NoNodes, 6 * mesh%NoNodes) :: tangent
+        double precision, dimension (3, mesh%NoNodes)                    :: X, dU, dth
+        double precision, dimension (6, mesh%NoNodes)                    :: Fint, Fext
+        logical,          dimension (6 * mesh%NoNodes)                   :: dof
+        double precision                                                 :: convtest
+        integer                                                          :: i, j, k, errck
+        
+        if (      present(TOLER))   TOLERCopy   = TOLER
+        if (.NOT. present(TOLER))   TOLERCopy   = 1.0D-8
+        if (      present(MAXITER)) MAXITERCopy = MAXITER
+        if (.NOT. present(MAXITER)) MAXITERCopy = 30
+        if (      present(TEST))    TESTCopy    = TEST
+        if (.NOT. present(TEST))    TESTCopy    = 'RSD'
+        if (      present(prints))  PRINTSCopy  = PRINTS
+        if (.NOT. present(prints))  PRINTSCopy  = .TRUE.
+        
+        R = Uload  ! fill R with displacement load
+        dof = pack (DOF6, .TRUE.)
+        
+        if (PRINTSCopy) call begin_table ('N')
+        
+        do i = 0, MAXITERCopy-1
+            
+            noIter = i + 1
+            
+            if (i > 0) then
+                tangent = assemble_tangent (mesh)  ! tangent
+                
+                call solve (tangent, R, dof)  ! solve the system, fill R with results
+                
+            end if
+            
+            dU = R (1:3, :)  ! divide displacements and rotations
+            dth = R (4:6, :)
+            
+            mesh%Displacements = mesh%Displacements + dU
+            mesh%Positions = mesh%Coordinates + mesh%Displacements
+                        
+            if (TESTCopy .eq. 'DSP') convtest = norm2 (R)  ! R are incremental updates
+            
+            call update_stress_strain (mesh, dth)
+                        
+            Fint = assemble_internal_force (mesh)
+            Fext = assemble_external_force (mesh, Q)
+            R = Fext - Fint  ! compute residual, fill R with residual forces
+            
+            do j = 1, 6
+                do k = 1, mesh%NoNodes
+                    if (.NOT. DOF6 (j, k)) R(j, k) = 0.0D0
+                end do
+            end do
+            
+            if (TESTCopy .eq. 'RSD') convtest = norm2 (R)  ! R are residual forces
+                        
+            if (PRINTSCopy) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
+            if (convtest < TOLERCopy) exit
+            
+        end do
+                
+        if (i .eq. MAXITERCopy) then
+            if (PRINTSCopy) write (6, '(/, "Not converging")')
+            stop
+        end if
+        
+    end subroutine dynamic_iter
     
     recursive function det_rosetta ( mat, n ) result( accum )
         integer :: n
