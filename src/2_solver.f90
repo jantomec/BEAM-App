@@ -1,7 +1,7 @@
 ! Finite element solver
 !
 ! author .............. Jan Tomec
-! copyright ........... Copyright 2020, Project THREAD - University of Rijeka, Faculty of Civil Engineering
+! Valueright ........... Valueright 2020, Project THREAD - University of Rijeka, Faculty of Civil Engineering
 ! credits ............. Jan Tomec, Gordan Jelenić
 ! license ............. GPL
 ! version ............. 1.0.0
@@ -159,10 +159,10 @@ module solver
         integer,             optional :: MAXITER
         character (len = 3), optional :: TEST
         logical,             optional :: PRINTS
-        double precision              :: TOLERCopy
-        integer                       :: MAXITERCopy
-        character (len = 3)           :: TESTCopy
-        logical                       :: PRINTSCopy
+        double precision              :: TOLERValue
+        integer                       :: MAXITERValue
+        character (len = 3)           :: TESTValue
+        logical                       :: PRINTSValue
         
         double precision, dimension (6 * mesh%NoNodes, 6 * mesh%NoNodes) :: tangent
         double precision, dimension (3, mesh%NoNodes)                    :: X, dU, dth
@@ -171,21 +171,21 @@ module solver
         double precision                                                 :: convtest
         integer                                                          :: i, j, k, errck
         
-        if (      present(TOLER))   TOLERCopy   = TOLER
-        if (.NOT. present(TOLER))   TOLERCopy   = 1.0D-8
-        if (      present(MAXITER)) MAXITERCopy = MAXITER
-        if (.NOT. present(MAXITER)) MAXITERCopy = 30
-        if (      present(TEST))    TESTCopy    = TEST
-        if (.NOT. present(TEST))    TESTCopy    = 'RSD'
-        if (      present(prints))  PRINTSCopy  = PRINTS
-        if (.NOT. present(prints))  PRINTSCopy  = .TRUE.
+        if (      present(TOLER))   TOLERValue   = TOLER
+        if (.NOT. present(TOLER))   TOLERValue   = 1.0D-8
+        if (      present(MAXITER)) MAXITERValue = MAXITER
+        if (.NOT. present(MAXITER)) MAXITERValue = 30
+        if (      present(TEST))    TESTValue    = TEST
+        if (.NOT. present(TEST))    TESTValue    = 'RSD'
+        if (      present(prints))  PRINTSValue  = PRINTS
+        if (.NOT. present(prints))  PRINTSValue  = .TRUE.
         
         R = Uload  ! fill R with displacement load
         dof = pack (DOF6, .TRUE.)
         
-        if (PRINTSCopy) call begin_table ('N')
+        if (PRINTSValue) call begin_table ('N')
         
-        do i = 0, MAXITERCopy-1
+        do i = 0, MAXITERValue-1
             
             noIter = i + 1
             
@@ -202,7 +202,7 @@ module solver
             mesh%Displacements = mesh%Displacements + dU
             mesh%Positions = mesh%Coordinates + mesh%Displacements
                         
-            if (TESTCopy .eq. 'DSP') convtest = norm2 (R)  ! R are incremental updates
+            if (TESTValue .eq. 'DSP') convtest = norm2 (R)  ! R are incremental updates
             
             call update_stress_strain (mesh, dth)
                         
@@ -216,21 +216,21 @@ module solver
                 end do
             end do
             
-            if (TESTCopy .eq. 'RSD') convtest = norm2 (R)  ! R are residual forces
+            if (TESTValue .eq. 'RSD') convtest = norm2 (R)  ! R are residual forces
                         
-            if (PRINTSCopy) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
-            if (convtest < TOLERCopy) exit
+            if (PRINTSValue) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
+            if (convtest < TOLERValue) exit
             
         end do
                 
-        if (i .eq. MAXITERCopy) then
-            if (PRINTSCopy) write (6, '(/, "Not converging")')
+        if (i .eq. MAXITERValue) then
+            if (PRINTSValue) write (6, '(/, "Not converging")')
             stop
         end if
         
     end subroutine newton_iter
     
-    subroutine dynamic_iter (mesh, DOF6, Uload, Q, R, noIter, TOLER, MAXITER, TEST, PRINTS)
+    subroutine dynamic_iter (mesh, DOF6, Uload, Q, R, h, beta, gamma, noIter, TOLER, MAXITER, TEST, PRINTS)
     
         implicit none
         
@@ -238,44 +238,45 @@ module solver
         logical,          dimension (6, mesh%NoNodes), intent (in)    :: DOF6
         double precision, dimension (6, mesh%NoNodes), intent (in)    :: Uload, Q
         double precision, dimension (6, mesh%NoNodes), intent (out)   :: R
+        double precision,                              intent (in)    :: h, beta, gamma
         integer,                                       intent (out)   :: noIter
         
         double precision,    optional :: TOLER
         integer,             optional :: MAXITER
         character (len = 3), optional :: TEST
         logical,             optional :: PRINTS
-        double precision              :: TOLERCopy
-        integer                       :: MAXITERCopy
-        character (len = 3)           :: TESTCopy
-        logical                       :: PRINTSCopy
+        double precision              :: TOLERValue
+        integer                       :: MAXITERValue
+        character (len = 3)           :: TESTValue
+        logical                       :: PRINTSValue
         
         double precision, dimension (6 * mesh%NoNodes, 6 * mesh%NoNodes) :: tangent
         double precision, dimension (3, mesh%NoNodes)                    :: X, dU, dth
-        double precision, dimension (6, mesh%NoNodes)                    :: Fint, Fext
+        double precision, dimension (6, mesh%NoNodes)                    :: Fint, Fext, Fine
         logical,          dimension (6 * mesh%NoNodes)                   :: dof
         double precision                                                 :: convtest
         integer                                                          :: i, j, k, errck
         
-        if (      present(TOLER))   TOLERCopy   = TOLER
-        if (.NOT. present(TOLER))   TOLERCopy   = 1.0D-8
-        if (      present(MAXITER)) MAXITERCopy = MAXITER
-        if (.NOT. present(MAXITER)) MAXITERCopy = 30
-        if (      present(TEST))    TESTCopy    = TEST
-        if (.NOT. present(TEST))    TESTCopy    = 'RSD'
-        if (      present(prints))  PRINTSCopy  = PRINTS
-        if (.NOT. present(prints))  PRINTSCopy  = .TRUE.
+        if (      present(TOLER))   TOLERValue   = TOLER
+        if (.NOT. present(TOLER))   TOLERValue   = 1.0D-8
+        if (      present(MAXITER)) MAXITERValue = MAXITER
+        if (.NOT. present(MAXITER)) MAXITERValue = 30
+        if (      present(TEST))    TESTValue    = TEST
+        if (.NOT. present(TEST))    TESTValue    = 'RSD'
+        if (      present(prints))  PRINTSValue  = PRINTS
+        if (.NOT. present(prints))  PRINTSValue  = .TRUE.
         
         R = Uload  ! fill R with displacement load
         dof = pack (DOF6, .TRUE.)
         
-        if (PRINTSCopy) call begin_table ('N')
+        if (PRINTSValue) call begin_table ('N')
         
-        do i = 0, MAXITERCopy-1
+        do i = 0, MAXITERValue-1
             
             noIter = i + 1
             
             if (i > 0) then
-                tangent = assemble_tangent (mesh)  ! tangent
+                tangent = assemble_tangent_dynamic (mesh, h, beta, gamma)  ! tangent
                 
                 call solve (tangent, R, dof)  ! solve the system, fill R with results
                 
@@ -285,31 +286,35 @@ module solver
             dth = R (4:6, :)
             
             mesh%Displacements = mesh%Displacements + dU
+            mesh%Velocities = mesh%Velocities + gamma / (h*beta) * dU
+            mesh%Accelerations = mesh%Accelerations + gamma / (h**2*beta) * dU
             mesh%Positions = mesh%Coordinates + mesh%Displacements
                         
-            if (TESTCopy .eq. 'DSP') convtest = norm2 (R)  ! R are incremental updates
+            if (TESTValue .eq. 'DSP') convtest = norm2 (R)  ! R are incremental updates
             
             call update_stress_strain (mesh, dth)
+            call updateDynamics (mesh, dth, h, beta, gamma)
                         
             Fint = assemble_internal_force (mesh)
             Fext = assemble_external_force (mesh, Q)
-            R = Fext - Fint  ! compute residual, fill R with residual forces
+            Fine = assemble_inertial_force (mesh)
+            R = Fine + Fext - Fint  ! compute residual, fill R with residual forces
             
             do j = 1, 6
                 do k = 1, mesh%NoNodes
-                    if (.NOT. DOF6 (j, k)) R(j, k) = 0.0D0
+                    if (.NOT. DOF6 (j, k)) R (j, k) = 0.0D0
                 end do
             end do
             
-            if (TESTCopy .eq. 'RSD') convtest = norm2 (R)  ! R are residual forces
+            if (TESTValue .eq. 'RSD') convtest = norm2 (R)  ! R are residual forces
                         
-            if (PRINTSCopy) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
-            if (convtest < TOLERCopy) exit
+            if (PRINTSValue) write (6, '(I4, X, "|", X, ES20.13)') i, convtest
+            if (convtest < TOLERValue) exit
             
         end do
                 
-        if (i .eq. MAXITERCopy) then
-            if (PRINTSCopy) write (6, '(/, "Not converging")')
+        if (i .eq. MAXITERValue) then
+            if (PRINTSValue) write (6, '(/, "Not converging")')
             stop
         end if
         
@@ -371,8 +376,8 @@ module solver
         
         double precision,    optional :: TOLER
         integer,             optional :: MAXITER
-        double precision              :: TOLERCopy
-        integer                       :: MAXITERCopy
+        double precision              :: TOLERValue
+        integer                       :: MAXITERValue
         
         double precision, dimension (6 * mesh%NoNodes, 6 * mesh%NoNodes) :: tangent
         double precision, dimension (3, mesh%NoNodes)                    :: X, dU, dth, dUF, dUR, thF, thR
@@ -387,10 +392,10 @@ module solver
         double precision, dimension (2) :: dlambda_test
         integer, dimension (1) :: dlambda_test_res
         
-        if (      present(TOLER))   TOLERCopy   = TOLER
-        if (.NOT. present(TOLER))   TOLERCopy   = 1.0D-8
-        if (      present(MAXITER)) MAXITERCopy = MAXITER
-        if (.NOT. present(MAXITER)) MAXITERCopy = 30
+        if (      present(TOLER))   TOLERValue   = TOLER
+        if (.NOT. present(TOLER))   TOLERValue   = 1.0D-8
+        if (      present(MAXITER)) MAXITERValue = MAXITER
+        if (.NOT. present(MAXITER)) MAXITERValue = 30
         
         errck = 0
                         
@@ -411,7 +416,7 @@ module solver
         call begin_table ('A')
         write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F14.10)') 0, norm2 (R), lambda
         
-        do i = 1, MAXITERCopy
+        do i = 1, MAXITERValue
             
             noIter = i
                     
@@ -484,11 +489,11 @@ module solver
                         
             convtest = norm2 (R2 (:, 2)) / norm2 (R2 (:, 1))
             write (6, '(I4, X, "|", X, ES20.13, X, "|", X, F15.11)') i, convtest, lambda
-            if (convtest < TOLERCopy) exit
+            if (convtest < TOLERValue) exit
             
         end do
                 
-        if (i .eq. MAXITERCopy + 1) then
+        if (i .eq. MAXITERValue + 1) then
             write (6, '(/, "Not converging")')
             stop
         end if
