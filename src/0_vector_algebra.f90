@@ -18,7 +18,7 @@ module vector_algebra
 	
 	private
 	
-	public :: cross_product, tensor_product, skew, rv2mat, diagonalMatrix
+	public :: cross_product, tensor_product, skew, rv2mat, diagonalMatrix, identityMatrix
 	
 	contains
 	
@@ -144,5 +144,20 @@ module vector_algebra
         end do
 		
 	end function diagonalMatrix
+    
+    pure function identityMatrix (n)
+	
+		implicit none
+		
+		integer, intent (in) :: n
+		double precision, dimension (n, n) :: identityMatrix
+		integer :: i
+		
+		identityMatrix = 0.0D0
+        do i = 1, n
+            identityMatrix (i, i) = 1.0D0
+        end do
+		
+	end function identityMatrix
 	
 end module

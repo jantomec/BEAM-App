@@ -341,13 +341,65 @@ module beam
     
     end function geometrical_stiffness
     
-    function mass_stiffness (element) result (K)
+    function mass_stiffness (h, beta, gamma, coordinates, element) result (K)
         
         implicit none
         
-        type (LineElement) :: element
+        type (LineElement)                 :: element
+        double precision                   :: h, beta, gamma
+        double precision, dimension (:, :) :: coordinates
         
         double precision, dimension (6 * element%NoNodes, 6 * element%NoNodes)  :: K
+        
+        double precision                                                        :: L
+        double precision, dimension (element%NoGauss)                           :: pts, wgts
+        double precision, dimension (element%NoNodes, element%NoGauss)          :: N, dN
+        double precision, dimension (6, 6)                                      :: m
+        double precision, dimension (3)                                         :: m11
+        double precision, dimension (3, 3)                                      :: m1, m2, m3, m4, m3T, m3tp
+        double precision                                                        :: t
+        integer                                                                 :: g, i, j, ii, ij
+        
+        L = element_length (coordinates, element)
+        call legauss (element%NoGauss, pts, wgts)
+        N = shfun (element%NoNodes, pts)
+        dN = 2.0D0 / L * shdfun (element%NoNodes, pts)
+                
+        K = 0.0D0
+        
+        do g = 1, element%NoGauss
+            do i = 1, element%NoNodes
+                ii = 6 * (i-1) + 1
+                do j = 1, element%NoNodes
+                    ij = 6 * (j-1) + 1
+                    m = 0.0D0
+                    m (1:3, 1:3) = wgts (g) * ( 1 /(h**2 * beta) * element%rho * element%A * N (i, g) * N (j, g) )
+                    m11 = matmul ( &
+                        element%RotationMatrix (g, :, :), &
+                        matmul (element%InertiaMatrix, element%AngularAcceleration (:, g)) + &
+                            cross_product (element%AngularVelocity (:, g), &
+                                matmul (element%InertiaMatrix, element%AngularVelocity (:, g)) &
+                            ) &
+                    )
+                    m1 = skew (m11)
+                    m2 = matmul ( &
+                        element%RotationMatrix (g, :, :), &
+                        element%InertiaMatrix - &
+                            h * gamma * skew (matmul (element%InertiaMatrix, element%AngularVelocity (:, g))) + &
+                            h * gamma * matmul (skew (element%AngularVelocity (:, g)), element%InertiaMatrix) &
+                    )
+                    t = norm2 (element%Rotation (:, g))
+                    m3tp = tensor_product(element%Rotation (:, g), element%Rotation (:, g)) / (t**2)
+                    m3T = m3tp + t/2 / tan (t/2) * (identityMatrix (3) - m3tp) - 0.5D0 * skew (element%Rotation (:, g))
+                    m3 = matmul (element%RotationMatrixLastConverged (g, :, :), m3T)
+                    m4 = matmul(-m1 + 1 /(h**2 * beta) * m2, m3)
+                    m (4:6, 4:6) = wgts (g) * ( m4 * N (i, g) * N (j, g) )
+                    K (ii:ii + 5, ij:ij + 5) = K (ii:ii + 5, ij:ij + 5) + m
+                end do
+            end do
+        end do
+        
+        K = L / 2.0D0 * K
     
     end function mass_stiffness
     
