@@ -157,8 +157,12 @@ module vector_algebra
         A = 0.5D0 * (R - transpose (R))
         A2 = matmul (A, A)
 		Anorm = sqrt (-0.5D0 * trace (A2))
-        Tskew = asin (Anorm) / Anorm * A
-        t = antiskew (Tskew)
+        if (Anorm == 0) then
+            t = 0.0D0
+        else
+            Tskew = asin (Anorm) / Anorm * A
+            t = antiskew (Tskew)
+        end if
 		
 	end function logarithmicMap
     
