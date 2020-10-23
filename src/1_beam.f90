@@ -436,6 +436,41 @@ module beam
         
     end function assemble_tangent
     
+    function assemble_tangent_dynamic (mesh, h, beta, gamma) result (Kg)
+    
+        implicit none
+        
+        type (ElementMesh) :: mesh
+        double precision   :: h, beta, gamma
+        
+        double precision, dimension (6 * mesh%NoNodes, 6 * mesh%NoNodes) :: Kg
+        
+        type (LineElement)  :: element
+        integer             :: e, i, j, ei, ej
+        double precision, dimension (:,:), allocatable :: Ke
+        
+        Kg = 0.0D0
+        
+        do e = 1, mesh%NoElements
+            element = mesh%Elements (e)
+            allocate (Ke (6*element%NoNodes, 6*element%NoNodes))
+            Ke = material_stiffness (mesh%Coordinates, mesh%Positions, element) + &
+                     geometrical_stiffness (mesh%Coordinates, mesh%Positions, element) + &
+                     mass_stiffness (h, beta, gamma, mesh%Coordinates, element)
+            do i = 1, element%NoNodes
+                ei = element%Nodes (i)
+                do j = 1, element%NoNodes
+                    ej = element%Nodes (j)
+                    Kg (6 * (ei - 1) + 1:6 * ei, 6 * (ej - 1) + 1:6 * ej) = &
+                        Kg (6 * (ei - 1) + 1:6 * ei, 6 * (ej - 1) + 1:6 * ej) &
+                        + Ke (6 * (i - 1) + 1:6 * i, 6 * (j - 1) + 1:6 * j)
+                end do
+            end do
+            deallocate (Ke)
+        end do
+        
+    end function assemble_tangent_dynamic
+    
     ! compute global internal force vector
     function assemble_internal_force (mesh) result (Fint)
     
