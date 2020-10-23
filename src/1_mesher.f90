@@ -40,7 +40,7 @@ module mesher
 		double precision,   dimension (3, elementOrder*noElements+1) :: coordinates
 		type (LineElement), dimension (noElements)                   :: elements
 		integer,            dimension (elementOrder+1)               :: nodes
-		type (LineElement) :: element
+        
 		integer            :: i, j
 		double precision   :: dx
 		double precision, dimension (gaussOrder, 3,3) :: identityMatrix
@@ -56,11 +56,11 @@ module mesher
 		        
         do i = 1, noElements
             nodes = (/ (j, j = elementOrder*(i-1)+1, elementOrder*i+1) /)
-            element = LineElement_init (nodes=nodes, C=C, rotationMatrix=identityMatrix, pressure=pressure)
-            elements (i) = element
+            
+            call elements (i)%init (nodes=nodes, C=C, rotationMatrix=identityMatrix, pressure=pressure)
         end do
         
-        lineMesh = ElementMesh_init (coordinates, elements)
+        call lineMesh%init (coordinates, elements)
 		
 	end function lineMesh
     
@@ -77,7 +77,7 @@ module mesher
 		double precision,   dimension (3, elementOrder*noElements+1) :: coordinates
 		type (LineElement), dimension (noElements)                   :: elements
 		integer,            dimension (elementOrder+1)               :: nodes
-		type (LineElement) :: element
+        
 		integer            :: i, j
 		double precision   :: dphi, phi1, phi2, phig
 		double precision, dimension (gaussOrder, 3,3) :: rotationMatrix
@@ -104,11 +104,11 @@ module mesher
                 rotvec = (/ 0.0D0, phig, 0.0D0 /)
 				rotationMatrix (j, :, :) = rv2mat (rotvec)
 			end do
-            element = LineElement_init (nodes=nodes, C=C, rotationMatrix=rotationMatrix, pressure=pressure)
-            elements (i) = element
+            
+            call elements (i)%init (nodes=nodes, C=C, rotationMatrix=rotationMatrix, pressure=pressure)
         end do
         
-        arcMesh = ElementMesh_init (coordinates, elements)
+        call arcMesh%init (coordinates, elements)
         		
 	end function arcMesh
 	

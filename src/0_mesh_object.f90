@@ -28,7 +28,11 @@ module mesh_objects
 		double precision, dimension (6, 6)                 :: C
 		double precision, dimension (:, :, :), allocatable :: RotationMatrix  ! (NoGauss, 3, 3)
 		double precision, dimension (:, :),    allocatable :: Strain, Stress, Pressure  ! (6, NoGauss)
-                
+        
+        contains
+        
+        procedure :: init => LineElement_init
+        
 	end type LineElement
     
     type ElementMesh
@@ -37,17 +41,21 @@ module mesh_objects
 		double precision,   dimension (:, :), allocatable :: Coordinates
 		double precision,   dimension (:, :), allocatable :: Displacements
 		double precision,   dimension (:, :), allocatable :: Positions
-		type (LineElement), dimension (:),    allocatable :: Elements    
+		type (LineElement), dimension (:),    allocatable :: Elements
+        
+        contains
+        
+        procedure :: init => ElementMesh_init
         
 	end type ElementMesh
     
     contains
     
-    function LineElement_init (nodes, C, rotationMatrix, strain, stress, pressure) result (self)
+    subroutine LineElement_init (self, nodes, C, rotationMatrix, strain, stress, pressure)
         
         implicit none
         
-        type (LineElement)                              :: self
+        class (LineElement), intent (inout)             :: self
         
         integer,          dimension (:)                 :: nodes
 		double precision, dimension (6, 6)              :: C
@@ -75,13 +83,13 @@ module mesh_objects
         if (present (stress)) self%Stress = stress
         if (present (pressure)) self%Pressure = pressure
         
-    end function
+    end subroutine
     
-	function ElementMesh_init (coordinates, elements) result (self)
+	subroutine ElementMesh_init (self, coordinates, elements)
         
         implicit none
         
-        type (ElementMesh)                              :: self
+        class (ElementMesh), intent (inout)             :: self
         
         double precision,  dimension (:, :)             :: coordinates
 		type(LineElement), dimension (:)                :: elements
@@ -97,6 +105,6 @@ module mesh_objects
         self%Displacements = 0.0D0 * coordinates
         self%Positions = coordinates
         
-    end function
+    end subroutine
     
 end module
