@@ -56,7 +56,6 @@ module mesher
 		        
         do i = 1, noElements
             nodes = (/ (j, j = elementOrder*(i-1)+1, elementOrder*i+1) /)
-            
             call elements (i)%init (nodes=nodes, properties=properties, rotationMatrix=identityMatrix, pressure=pressure)
         end do
         
