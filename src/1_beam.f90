@@ -286,6 +286,46 @@ module beam
         
     end subroutine curvature
     
+    subroutine dynamicUpdate (element, theta, h, beta, gamma)
+        
+        implicit none
+        
+        type (LineElement)                                             :: element
+        double precision, dimension (:, :)                             :: theta
+        double precision                                               :: h, beta, gamma
+        
+        double precision, dimension (element%NoGauss)                  :: pts, wgts
+        double precision, dimension (element%NoNodes, element%NoGauss) :: N
+        double precision, dimension (3, element%NoGauss)               :: t
+        double precision, dimension (3)                                :: rot
+        integer                                                        :: g
+        
+        call legauss (element%NoGauss, pts, wgts)
+        N = shfun (element%NoNodes, pts)
+        t = matmul (theta, N)
+        
+        do g = 1, element%NoGauss
+            
+            ! New rotation
+            rot = logarithmicMap ( &
+                matmul (exponentialMap (t (:, g)), exponentialMap (element%Rotation (:, g))) &
+            )
+            
+            ! Angular Velocity update
+            element%AngularVelocity (:, g) = element%AngularVelocity (:, g) + &
+                gamma / (h*beta) * (rot - element%Rotation (:, g))
+                
+            ! Angular Acceleration update
+            element%AngularAcceleration (:, g) = element%AngularAcceleration (:, g) + &
+                gamma / (h**2*beta) * (rot - element%Rotation (:, g))
+            
+            ! Rotation update
+            element%Rotation (:, g) = rot
+            
+        end do
+        
+    end subroutine dynamicUpdate
+    
     function material_stiffness (coordinates, positions, element) result (K)
         
         implicit none
@@ -386,7 +426,7 @@ module beam
     
     end function geometrical_stiffness
     
-    function mass_stiffness (h, beta, gamma, coordinates, element) result (K)
+    function mass_stiffness (coordinates, element, h, beta, gamma) result (K)
         
         implicit none
         
@@ -504,7 +544,7 @@ module beam
             allocate (Ke (6*element%NoNodes, 6*element%NoNodes))
             Ke = material_stiffness (mesh%Coordinates, mesh%Positions, element) + &
                      geometrical_stiffness (mesh%Coordinates, mesh%Positions, element) + &
-                     mass_stiffness (h, beta, gamma, mesh%Coordinates, element)
+                     mass_stiffness (mesh%Coordinates, element, h, beta, gamma)
             do i = 1, element%NoNodes
                 ei = element%Nodes (i)
                 do j = 1, element%NoNodes

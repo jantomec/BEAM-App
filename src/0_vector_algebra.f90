@@ -18,7 +18,7 @@ module vector_algebra
 	
 	private
 	
-	public :: cross_product, tensor_product, skew, exponentialMap, diagonalMatrix, identityMatrix
+	public :: cross_product, tensor_product, skew, exponentialMap, logarithmicMap, diagonalMatrix, identityMatrix
 	
 	contains
 	
