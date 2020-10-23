@@ -24,6 +24,6 @@ ax.set_xlim((-2.35, 2.05))
 ax.set_ylim((-2.5, 2.22))
 
 for i in range(len(data)):
-    ax.plot(data[i,:,3], data[i,:,1])
+    ax.plot(data[i,:,1], data[i,:,3])
 
 plt.savefig(test+'.png')  # to save image

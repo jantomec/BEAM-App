@@ -52,7 +52,7 @@ module mesher
         
 		coordinates = 0.0D0
 		dx = L / (elementOrder*noElements)
-		coordinates (3, :) = (/ (j * dx, j = 0, elementOrder*noElements) /)
+		coordinates (1, :) = (/ (j * dx, j = 0, elementOrder*noElements) /)
 		        
         do i = 1, noElements
             nodes = (/ (j, j = elementOrder*(i-1)+1, elementOrder*i+1) /)
@@ -89,10 +89,10 @@ module mesher
 		coordinates = 0.0D0
 		dphi = (phi_f - phi_i) / (elementOrder*noElements)
 		do i = 1, elementOrder*noElements + 1
-			coordinates (3, i) = radius * cos (phi_i + (i - 1) * dphi)
-			coordinates (1, i) = radius * sin (phi_i + (i - 1) * dphi)
+			coordinates (1, i) = radius * cos (phi_i + (i - 1) * dphi)
+			coordinates (3, i) = radius * sin (phi_i + (i - 1) * dphi)
 		end do
-		
+        
         call legauss (gaussOrder, pts, wgts)
         
         do i = 1, noElements
@@ -101,8 +101,9 @@ module mesher
 			phi2 = phi_i + (nodes (elementOrder + 1) - 1) * dphi
             do j = 1, gaussOrder
 				phig = ((pts (j) + 1.0D0) / 2.0D0 * (phi2 - phi1) + phi1) + PI / 2
-                rotvec = (/ 0.0D0, phig, 0.0D0 /)
+                rotvec = (/ 0.0D0, -phig, 0.0D0 /)
 				rotationMatrix (j, :, :) = rv2mat (rotvec)
+                print *, phig
 			end do
             call elements (i)%init (nodes=nodes, properties=properties, rotationMatrix=rotationMatrix, pressure=pressure)
         end do

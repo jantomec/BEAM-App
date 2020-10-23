@@ -117,12 +117,13 @@ module mesh_objects
         self%k   = properties%ShearCoefficient
         
         self%C        = 0.0D0
-        self%C (1, 1) = self%G * self%A * self%k
+        self%C (1, 1) = self%E * self%A
         self%C (2, 2) = self%G * self%A * self%k
-        self%C (3, 3) = self%E * self%A
-        self%C (4, 4) = self%E * self%I1
-        self%C (5, 5) = self%E * self%I2
-        self%C (6, 6) = self%G * self%It
+        self%C (3, 3) = self%G * self%A * self%k
+        self%C (4, 4) = self%G * self%It
+        self%C (5, 5) = self%E * self%I1
+        self%C (6, 6) = self%E * self%I2
+        
         
         !self%InertiaMatrix
         

@@ -192,7 +192,7 @@ module beam
         
         double precision, dimension (3, 3)          :: R, rotinv
         double precision, dimension (3)             :: om, b1, b2, b3, a1, a2, a3, Gamma, kappa, fn, fm
-        double precision, dimension (3), parameter  :: E3 = (/ 0.0D0, 0.0D0, 1.0D0 /)
+        double precision, dimension (3), parameter  :: E3 = (/ 1.0D0, 0.0D0, 0.0D0 /)
         
         X = positions (:, element%Nodes)
         

@@ -9,8 +9,8 @@
 !                  | F
 !                  |
 !                  v
-!              *********                 EA      = 170000
-!          ***           ***             GAy     = 170
+!              *********                 EA      = 17000
+!          ***           ***             GAy     = 17000
 !        **                 **           GAz     = 17000
 !      **                     **         Jx      = 170
 !     **                       **        EIyy    = 170
@@ -30,12 +30,7 @@ program arch
     
     implicit none
     
-    integer,          parameter :: noElements = 40
-    integer,          parameter :: elementOrder = 1
-    integer,          parameter :: gaussOrder = 1
-    double precision, parameter :: L = 1.5D0
     double precision, parameter :: PI = 4 * atan (1.0D0), DEG = PI / 180
-    double precision, parameter :: Q0 = -1400.0D0
     double precision, parameter :: dS = 0.2D0
     integer,          parameter :: MAXITER = 20
     double precision, parameter :: TOLER = 1D-8
@@ -45,11 +40,10 @@ program arch
     type (ElementMesh) :: mesh
     type (ElementProperties) :: properties
     double precision :: lambda
-    integer, parameter :: noNodes = noElements * elementOrder + 1
-    double precision, dimension (3 * noNodes) :: Uinc
-    logical, dimension (6, noNodes) :: DOF
-    double precision, dimension (6, noNodes) :: Q, QC, R
-    integer :: i, j, noIter, info
+    double precision, dimension (:),    allocatable :: Uinc
+    logical,          dimension (:,:),  allocatable :: DOF
+    double precision, dimension (:, :), allocatable :: Q, QC, R
+    integer :: j, noIter, info
     
     ! =================================================
     ! MATERIAL AND GEOMETRIC PROPERTIES
@@ -63,23 +57,28 @@ program arch
     properties%ShearCoefficient = 1.0D0
     
     ! =================================================
+    ! MESH
+    mesh = arcMesh (radius=1.5D0, phi_i=-1.5D1*DEG, phi_f=1.95D2*DEG, &
+                    noElements=40, elementOrder=1, gaussOrder=1, properties=properties)
+                    
+    ! =================================================
     ! DATA INITIALIZATION
+    allocate (Uinc (3 * mesh%NoNodes))
+    allocate (DOF (6, mesh%NoNodes))
+    allocate (Q (6, mesh%NoNodes), QC (6, mesh%NoNodes), R (6, mesh%NoNodes))
+    
     lambda = 0.0D0
     Uinc = 0.0D0
     Q = 0.0D0
     QC = 0.0D0
     R = 0.0D0
-        
-    ! =================================================
-    ! MESH
-    mesh = arcMesh (L, -15.0D0 * DEG, 195.0D0 * DEG, noElements, elementOrder, gaussOrder, properties)
     
     ! =================================================
     ! BOUNDARY CONDITIONS
     DOF = .TRUE.
     DOF (:, 1) = .FALSE.
-    DOF (:, noNodes) = (/ .FALSE., .FALSE., .FALSE., .TRUE., .TRUE., .TRUE.  /)
-    Q (1, noNodes / 2 + 1) = Q0
+    DOF (:, mesh%NoNodes) = (/ .FALSE., .FALSE., .FALSE., .TRUE., .TRUE., .TRUE.  /)
+    Q (3, mesh%NoNodes / 2 + 1) = -1.4D3
     
     ! =================================================
     ! SET UP RESULT FILES   

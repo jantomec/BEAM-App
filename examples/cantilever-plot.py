@@ -43,9 +43,9 @@ data = np.array(data)
 fig = plt.figure(figsize=(6*1.3,6*0.27))
 ax = fig.gca()
 ax.set_xlim((-0.15, 1.05))
-ax.set_ylim((-0.05, 0.22))
+ax.set_ylim((-0.22, 0.05))
 
 for i in range(0,nsteps):
-    ax.plot(data[i,:,3], data[i,:,1])
+    ax.plot(data[i,:,1], data[i,:,3])
 
 plt.savefig(test+'.png')  # to save image

@@ -31,20 +31,20 @@ program cantilever
     ! properties%Density          = 0.0D0
     properties%ElasticModulus   = 1.0D0
     properties%ShearModulus     = 1.0D0
-    properties%InertiaPrimary   = 1.0D0
-    properties%InertiaSecondary = 2.0D0
+    properties%InertiaPrimary   = 2.0D0
+    properties%InertiaSecondary = 1.0D0
     properties%InertiaTorsion   = 1.0D0
     properties%ShearCoefficient = 1.0D0
+        
+    ! =================================================
+    ! MESH  
+    mesh = lineMesh (L=L, noElements=noElements, elementOrder=elementOrder, gaussOrder=gaussOrder, properties=properties)
     
     ! =================================================
     ! DATA INITIALIZATION
     Uload = 0.0D0
     Q = 0.0D0
     R = 0.0D0
-    
-    ! =================================================
-    ! MESH  
-    mesh = lineMesh (L=L, noElements=noElements, elementOrder=elementOrder, gaussOrder=gaussOrder, properties=properties)
     
     ! =================================================
     ! BOUNDARY CONDITIONS
