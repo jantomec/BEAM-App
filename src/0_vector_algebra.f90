@@ -73,27 +73,40 @@ module vector_algebra
 		skew (3, 3) = 0.0D0
 		
 	end function skew
+    
+    pure function antiskew (R)
+		
+		implicit none
+		
+		double precision, dimension (3, 3), intent (in) :: R
+		double precision, dimension (3) :: antiskew
+		
+		antiskew (1) = R (3, 2)
+		antiskew (2) = R (1, 3)
+		antiskew (3) = R (2, 3)
+		
+	end function antiskew
 	
 	! create skew-symmetric matrix squared from rotation vector
 	! from Argyris_J.H.--An_excursion_into_large_rotations, p.88
-	pure function skew2 (r)
+	! pure function skew2 (r)
 	
-		implicit none
+		! implicit none
 		
-		double precision, dimension (3), intent (in) :: r
-		double precision, dimension (3, 3) :: skew2
+		! double precision, dimension (3), intent (in) :: r
+		! double precision, dimension (3, 3) :: skew2
 		
-		skew2 (1, 1) = - (r (2) ** 2 + r (3) ** 2)
-		skew2 (1, 2) = r (1) * r (2)
-		skew2 (1, 3) = r (1) * r (3)
-		skew2 (2, 1) = r (1) * r (2)
-		skew2 (2, 2) = - (r (1) ** 2 + r (3) ** 2)
-		skew2 (2, 3) = r (2) * r (3)
-		skew2 (3, 1) = r (1) * r (3)
-		skew2 (3, 2) = r (2) * r (3)
-		skew2 (3, 3) = - (r (1) ** 2 + r (2) ** 2)
+		! skew2 (1, 1) = - (r (2) ** 2 + r (3) ** 2)
+		! skew2 (1, 2) = r (1) * r (2)
+		! skew2 (1, 3) = r (1) * r (3)
+		! skew2 (2, 1) = r (1) * r (2)
+		! skew2 (2, 2) = - (r (1) ** 2 + r (3) ** 2)
+		! skew2 (2, 3) = r (2) * r (3)
+		! skew2 (3, 1) = r (1) * r (3)
+		! skew2 (3, 2) = r (2) * r (3)
+		! skew2 (3, 3) = - (r (1) ** 2 + r (2) ** 2)
 		
-	end function skew2
+	! end function skew2
 	
 	! create rotation matrix from rotation vector
 	! from Argyris_J.H.--An_excursion_into_large_rotations, p.88
@@ -122,13 +135,32 @@ module vector_algebra
 		sin_hr = sin (norm_hr)
 		
 		S = skew (r)
-		S2 = skew2 (r)
+		S2 = matmul (S, S)
 		
 		T1 = sin_r / norm_r * S
 		T2 = 0.5D0 * (sin_hr / norm_hr) ** 2 * S2
 		T = I + T1 + T2
 		
 	end function exponentialMap
+    
+    function logarithmicMap (R) result (t)
+		
+		implicit none
+		
+		double precision, dimension (3, 3), intent (in) :: R
+		double precision, dimension (3, 3)              :: A, A2
+		double precision, dimension (3, 3)              :: Tskew
+		double precision, dimension (3)                 :: t
+		double precision :: Anorm
+		!integer :: j
+		
+        A = 0.5D0 * (R - transpose (R))
+        A2 = matmul (A, A)
+		Anorm = sqrt (-0.5D0 * trace (A2))
+        Tskew = asin (Anorm) / Anorm * A
+        t = antiskew (Tskew)
+		
+	end function logarithmicMap
     
     pure function diagonalMatrix (a)
 	
@@ -159,5 +191,20 @@ module vector_algebra
         end do
 		
 	end function identityMatrix
+    
+    pure function trace (A)
+	
+		implicit none
+		
+		double precision, dimension (:, :), intent (in) :: A
+		double precision                                :: trace
+		integer :: i
+		
+		trace = 0.0D0
+        do i = 1, size (A (1, :))
+            trace = trace + A (i, i)
+        end do
+		
+	end function trace
 	
 end module
