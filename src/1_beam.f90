@@ -135,6 +135,51 @@ module beam
     
     end function internal_forces
     
+    ! compute elemental inertial forces in nodes
+    function inertial_forces (coordinates, accelerations, element) result (F)
+        
+        implicit none 
+        
+        double precision, dimension (:, :)                              :: coordinates, accelerations
+        type (LineElement)                                              :: element
+        double precision, dimension (6, element%NoNodes)                :: F
+        
+        double precision, dimension (3, element%NoNodes)                :: a
+        double precision                                                :: L
+        double precision, dimension (element%NoGauss)                   :: pts, wgts
+        double precision, dimension (element%NoNodes, element%NoGauss)  :: N
+        double precision, dimension (3, element%NoGauss)                :: as
+        double precision, dimension (3, 3)                              :: S
+        double precision, dimension (6, 6)                              :: Xi_i
+        integer                                                         :: g, i
+        
+        a = accelerations (:, element%Nodes)
+        
+        L = element_length (coordinates, element)
+        call legauss (element%NoGauss, pts, wgts)
+        N = shfun (element%NoNodes, pts)
+        
+        as = matmul (a, N)
+
+        F = 0.0D0
+        
+        do g = 1, element%NoGauss
+            do i = 1, element%NoNodes
+                F (1:3, i) = F (1:3, i) + (N (i, g) * element%A * element%rho * as (:, g)) * wgts (g)
+                F (4:6, i) = F (4:6, i) + (N (i, g) * ( &
+                    matmul (element%InertiaMatrix, element%AngularAcceleration (:, g)) + &
+                        cross_product ( &
+                            element%AngularVelocity (:, g), &
+                            matmul (element%InertiaMatrix, element%AngularVelocity (:, g)) &
+                        ) &
+                )) * wgts (g)
+            end do
+        end do
+        
+        F = L / 2.0D0 * F
+    
+    end function inertial_forces
+    
     ! compute elemental external forces in nodes
     function external_forces (coordinates, element) result (F)
         
@@ -355,7 +400,7 @@ module beam
         double precision, dimension (element%NoGauss)                           :: pts, wgts
         double precision, dimension (element%NoNodes, element%NoGauss)          :: N, dN
         double precision, dimension (6, 6)                                      :: m
-        double precision, dimension (3)                                         :: m11
+        double precision, dimension (3)                                         :: m11, w, alpha
         double precision, dimension (3, 3)                                      :: m1, m2, m3, m4, m3T, m3tp
         double precision                                                        :: t
         integer                                                                 :: g, i, j, ii, ij
@@ -372,21 +417,24 @@ module beam
                 ii = 6 * (i-1) + 1
                 do j = 1, element%NoNodes
                     ij = 6 * (j-1) + 1
+                    w = matmul (transpose (element%RotationMatrix (g, :, :)), element%AngularVelocity (:, g))
+                    alpha = matmul (transpose (element%RotationMatrix (g, :, :)), element%AngularAcceleration (:, g))
                     m = 0.0D0
                     m (1:3, 1:3) = wgts (g) * ( 1 /(h**2 * beta) * element%rho * element%A * N (i, g) * N (j, g) )
                     m11 = matmul ( &
                         element%RotationMatrix (g, :, :), &
-                        matmul (element%InertiaMatrix, element%AngularAcceleration (:, g)) + &
-                            cross_product (element%AngularVelocity (:, g), &
-                                matmul (element%InertiaMatrix, element%AngularVelocity (:, g)) &
+                        matmul (element%InertiaMatrix, alpha + &
+                            cross_product (w, &
+                                matmul (element%InertiaMatrix, w) &
                             ) &
+                        ) &
                     )
                     m1 = skew (m11)
                     m2 = matmul ( &
                         element%RotationMatrix (g, :, :), &
                         element%InertiaMatrix - &
-                            h * gamma * skew (matmul (element%InertiaMatrix, element%AngularVelocity (:, g))) + &
-                            h * gamma * matmul (skew (element%AngularVelocity (:, g)), element%InertiaMatrix) &
+                            h * gamma * skew (matmul (element%InertiaMatrix, w)) + &
+                            h * gamma * matmul (skew (w), element%InertiaMatrix) &
                     )
                     t = norm2 (element%Rotation (:, g))
                     m3tp = tensor_product(element%Rotation (:, g), element%Rotation (:, g)) / (t**2)
