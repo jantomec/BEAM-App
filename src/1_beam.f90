@@ -440,7 +440,7 @@ module beam
         
         double precision                                                        :: L
         double precision, dimension (element%NoGauss)                           :: pts, wgts
-        double precision, dimension (element%NoNodes, element%NoGauss)          :: N, dN
+        double precision, dimension (element%NoNodes, element%NoGauss)          :: N
         double precision, dimension (6, 6)                                      :: m
         double precision, dimension (3)                                         :: m11, w, alpha
         double precision, dimension (3, 3)                                      :: m1, m2, m3, m4, m3T, m3tp
@@ -450,7 +450,6 @@ module beam
         L = element_length (coordinates, element)
         call legauss (element%NoGauss, pts, wgts)
         N = shfun (element%NoNodes, pts)
-        dN = 2.0D0 / L * shdfun (element%NoNodes, pts)
                 
         K = 0.0D0
         
@@ -479,8 +478,12 @@ module beam
                             h * gamma * matmul (skew (w), element%InertiaMatrix) &
                     )
                     t = norm2 (element%Rotation (:, g))
-                    m3tp = tensor_product(element%Rotation (:, g), element%Rotation (:, g)) / (t**2)
-                    m3T = m3tp + t/2 / tan (t/2) * (identityMatrix (3) - m3tp) - 0.5D0 * skew (element%Rotation (:, g))
+                    if (t == 0) then
+                        m3T = identityMatrix (3)
+                    else
+                        m3tp = tensor_product(element%Rotation (:, g), element%Rotation (:, g)) / (t**2)
+                        m3T = m3tp + t/2 / tan (t/2) * (identityMatrix (3) - m3tp) - 0.5D0 * skew (element%Rotation (:, g))
+                    end if
                     m3 = matmul (element%RotationMatrixLastConverged (g, :, :), m3T)
                     m4 = matmul(-m1 + 1 /(h**2 * beta) * m2, m3)
                     m (4:6, 4:6) = wgts (g) * ( m4 * N (i, g) * N (j, g) )
@@ -547,6 +550,7 @@ module beam
             Ke = material_stiffness (mesh%Coordinates, mesh%Positions, element) + &
                      geometrical_stiffness (mesh%Coordinates, mesh%Positions, element) + &
                      mass_stiffness (mesh%Coordinates, element, h, beta, gamma)
+            
             do i = 1, element%NoNodes
                 ei = element%Nodes (i)
                 do j = 1, element%NoNodes
@@ -671,13 +675,10 @@ module beam
         double precision, dimension (:,:) :: theta
         double precision                  :: h, beta, gamma
         
-        type (LineElement)  :: element
         integer             :: j
         
         do j = 1, mesh%NoElements
-            element = mesh%Elements (j)
-            call update_angular_properties (element, theta(:, element%Nodes), h, beta, gamma)
-            mesh%Elements (j) = element
+            call update_angular_properties (mesh%Elements(j), theta(:, mesh%Elements(j)%Nodes), h, beta, gamma)
         end do
         
     end subroutine updateDynamics

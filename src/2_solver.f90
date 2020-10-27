@@ -277,9 +277,7 @@ module solver
             
             if (i > 0) then
                 tangent = assemble_tangent_dynamic (mesh, h, beta, gamma)  ! tangent
-                
                 call solve (tangent, R, dof)  ! solve the system, fill R with results
-                
             end if
             
             dU = R (1:3, :)  ! divide displacements and rotations
@@ -294,7 +292,7 @@ module solver
             
             call update_stress_strain (mesh, dth)
             call updateDynamics (mesh, dth, h, beta, gamma)
-                        
+            
             Fint = assemble_internal_force (mesh)
             Fext = assemble_external_force (mesh, Q)
             Fine = assemble_inertial_force (mesh)
